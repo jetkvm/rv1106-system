@@ -1,0 +1,14 @@
+commit cc20dd3efeb842dc17ebcb7cf7d772b46420bb1c
+Author: Yandong Lin <yandong.lin@rock-chips.com>
+Date:   Thu Nov 2 17:59:46 2023 +0800
+
+    fix[mpeg4_api]: fix drop frame when two stream switch
+    
+    There is a case:
+    In split mode, after sending the last packet of a stream,
+    the user then continues to send packet with extra data flag for the new
+    stream.
+    It will result in the last packet loss.
+    
+    Change-Id: Iba945dbf4229a49fea2040ecc9f76e4ef7209de8
+    Signed-off-by: Yandong Lin <yandong.lin@rock-chips.com>

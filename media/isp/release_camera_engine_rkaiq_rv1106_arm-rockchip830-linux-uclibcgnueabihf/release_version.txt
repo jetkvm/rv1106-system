@@ -1,0 +1,8 @@
+commit cd321b8121fda6ed1bedb60d20fef84a1659815a
+Author: hjl <jialong.huang@rock-chips.com>
+Date:   Tue Apr 30 15:20:39 2024 +0800
+
+    iqfiles: fix enhance_curve bug in ainr sc4336_CMK-OT01_40IRC_F16.json
+    
+    Signed-off-by: hjl <jialong.huang@rock-chips.com>
+    Change-Id: I1c25325da8e43d2b4af5780749faae34a49c124e

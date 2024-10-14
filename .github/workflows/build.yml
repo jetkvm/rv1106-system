@@ -1,0 +1,53 @@
+name: Build firmware
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: buildjet-16vcpu-ubuntu-2204 
+    name: Build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up build dependencies
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            device-tree-compiler \
+            gperf g++-multilib gcc-multilib \
+            libnl-3-dev libdbus-1-dev libelf-dev libmpc-dev dwarves
+      - name: Get build version
+        run: |
+          export BUILD_VERSION=$(cat VERSION)
+          # check if current branch is main, if not then append branch name and commit 
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            export BUILD_VERSION="$BUILD_VERSION-$(echo $GITHUB_REF | sed 's/refs\/heads\///' | sed 's/\//-/')$(date +%Y%m%d%H%M)"
+          fi
+
+          echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
+      - name: Build
+        run: |
+          echo "Version: $BUILD_VERSION"
+
+          # check if current branch is main, if not then append branch name and commit 
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            export BUILD_VERSION="$BUILD_VERSION-$(echo $GITHUB_REF | sed 's/refs\/heads\///' | sed 's/\//-/')-$(date +%Y%m%d%H%M)"
+          fi
+          ./update_app.sh
+          ./build.sh lunch BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
+          ./build.sh
+      - name: Upload OTA image
+        uses: actions/upload-artifact@v4
+        with:
+          name: OTA Image
+          path: output/image/update_ota.tar
+          retention-days: 30
+      - name: Upload Full image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Full Image
+          path: output/image/update.img
+          retention-days: 30

@@ -1,0 +1,10 @@
+commit e944743948760477ff611c5dbf6146cef81c15d2
+Author: Yu Qiaowei <cerf.yu@rock-chips.com>
+Date:   Wed Oct 18 17:01:57 2023 +0800
+
+    normal: hardware: fix the incorrect structure in the rga_req
+    
+    update to 1.10.0_[4]
+    
+    Change-Id: Ib6b612fd56211d1c032ddddb0a0278dd2a896392
+    Signed-off-by: Yu Qiaowei <cerf.yu@rock-chips.com>

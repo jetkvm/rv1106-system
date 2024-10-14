@@ -1,0 +1,85 @@
+#
+# Overlay cfg-common.mk
+#
+export CONFIG_RK_CHIP=rv1106
+export CONFIG_RK_MEDIA_CROSS=arm-rockchip830-linux-uclibcgnueabihf
+
+#------------------------------------------------
+# Enable libdrm
+export CONFIG_LIBDRM=y
+
+#------------------------------------------------
+# Rockchip's MPP(Multimedia Processing Platform)
+#
+# Enable MPP Build
+export CONFIG_RK_MPP=y
+# Rockchip MPP use drm allocator
+export CONFIG_RK_MPP_ALLOCATOR_DRM=n
+# Install test programs
+export CONFIG_RK_MPP_TESTS=y
+
+#------------------------------------------------
+# Rockchip's RKAIQ(Rockchip Auto Image Quality)
+#
+# Enable RKAIQ Build
+export CONFIG_RK_RKAIQ=n
+# ISP Hardware version
+export CONFIG_RK_ISP_HW_VERSION_V32=n
+# ISP build demo
+export CONFIG_RK_ISP_BUILD_DEMO=n
+
+#------------------------------------------------
+# Rockchip's RGA2 (Raster Graphic Acceleration)
+#
+# Enable RGA2 Build
+export CONFIG_RK_RGA2=y
+# RGA2 build with libdrm
+export CONFIG_RK_RGA2_USE_LIBDRM=n
+
+#------------------------------------------------
+# Rockchip's common algorithm
+#
+# Enable common_algorithm Build
+export CONFIG_RK_COMMON_ALGORITHM=n
+
+#------------------------------------------------
+# Rockchip's rockit
+#
+# Enable Rockit Build
+export CONFIG_RK_ROCKIT=y
+
+#------------------------------------------------
+# Rockchip's iva
+#
+# Enable iva Build
+export CONFIG_RK_IVA=n
+
+#------------------------------------------------
+# Rockchip's ive
+#
+# Enable ive Build
+export CONFIG_RK_IVE=n
+
+#------------------------------------------------
+# Rockchip's hardware crypto
+#
+# Enable librkcrypto Build
+export CONFIG_RK_CRYPTO=n
+
+# Enable alsa-lib
+export CONFIG_ALSA_LIB=y
+
+# Enable libv4l
+export CONFIG_LIBV4L=y
+
+##------------------------------------------------
+# Rockchip's avs
+#
+# Enable avs Build
+export CONFIG_RK_AVS=n
+
+#------------------------------------------------
+# Rockchip's auto
+#
+# Enable auto Build
+export CONFIG_RK_ROCKAUTO=n

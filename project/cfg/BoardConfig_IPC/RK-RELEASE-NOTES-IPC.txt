@@ -1,0 +1,372 @@
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.8.3_20240524.xml
+
+1. 更新rockit驱动
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.8.2_20240517.xml
+
+1. 回退Rockit驱动引入VI POLL问题导致双摄不出流问题
+2. 更新音频算法库
+3. 更新Window烧录工具
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.8.1_20240506.xml
+
+1. 增加Copyright_Statement.md文档
+2. 更新Release Note文件命名RK-RELEASE-NOTES-IPC.txt
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.8.0_20240501.xml
+
+- BSP
+1. 增加支持双摄卷绕
+2. 增加支持SPI NAND快启
+4. 增加支持SARADC/MIPI IO默认配置成GPIO功能
+5. 增加EVB1 V13板级参考
+6. 解决唤醒后gpio4寄存器没恢复问题
+7. 解决SPI NOR FLASH概率挂载不上问题
+8. 解决部分SD卡概率性识别不到问题
+
+- RKAIQ (V5.0x5.0)
+1. 解决IQ文件使用bin格式时，AWB非法释放Buffer问题
+2. 解决pthread_mutex_lock低概率挂掉问题
+3. 更新SMART IR版本到V2.0.1
+4. 解决数据流不断开关测试时导致的AIQ与数据流流程不同步问题
+5. 解决收敛状态下，固定帧率模式，设置初始帧率不生效的问题
+6. 解决GROUP模式下，CCM/LSC/SHARP/CNR工具控制不生效问题
+
+- Rockit (V1.4.86)
+1. VI: 添加闪光灯功能支持
+2. VI: 添加共享缓冲区接口
+3.  VI: 支持通过/dev/video0从传感器获取原始数据
+4.  VI: 支持RAWSTREAM
+5.  VI: 发送用户帧时使用构造的vframe
+6.  VI: 修复视频输入（vi）启动时错误管道ID的问题
+7.  VI: 修复VI附加池失败的错误
+8.  VI: 修复环绕模式未配置最大分辨率的问题
+9.  VPSS: 优化视频处理算法性能
+10. VPSS: 修复模块在处理特定视频流时的崩溃问题
+11. VPSS: 修复视频处理参数设置不当导致的错误
+12. VENC: 实现特定的视频编码设置，如Lambda和抗线
+13. VENC: 支持设置行量化参数
+14. VENC: 提前设置视频编码器的帧率
+15. VENC: 优化视频编码算法的性能
+16. VENC: 修复视频编码过程中可能出现的内存泄漏问题
+17. VENC: 修复编码器在处理特定视频格式时的兼容性问题
+18. VENC: 修复2BPP颜色偏色问题
+19. IVS: 支持OD属性设置
+20. IVS: 检查正方形的最大值
+21. IVS: 添加新的智能分析算法
+22. IVS: 支持更多类型的视频分析任务
+23. IVS: 性能优化与重构
+24. IVS: 优化智能分析算法的性能
+25. IVS: 修复模块在处理特定视频流时的分析错误
+26. IVS: 修复分析参数设置不当导致的错误
+27. SYS: 修复打开空路径文件描述符（fd）的错误
+28. AI/AO: 允许设置周期大小和周期计数
+29. AI/AO: 简化缓冲区缓存逻辑
+30. AI/AO: 避免周期大小出现奇数的情况
+
+- IVA (V1.9.2)
+1. 解决iva单实例下多路sensor的iva检测通道结果异常上报问题
+2. 支持人形提供切换跟踪/非跟踪接口
+
+- DOCS
+1. 新增如下文档：
+	Rockchip_Trouble_Shooting_Linux5.10_Camera_CN.pdf
+	Rockchip_Trouble_Shooting_Linux5.10_Camera_EN.pdf
+
+2. 更新如下文档：
+	Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_CN.pdf
+	Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_EN.pdf
+	Rockchip_Developer_Guide_Linux_Rkadk_CN.pdf
+	Rockchip_Developer_Guide_MPI.pdf
+	Rockchip_Developer_Guide_Sound_Event_Detection.pdf
+	Rockchip_Guide_AVS_Calib_Model_CN.pdf
+	Rockchip_Guide_AVS_Calib_Product_CN.pdf
+	Rockchip_RV1103_User_Manual_GPIO.pdf
+	Rockchip_RV1106_Developer_Guide_Linux_AOV_CN.pdf
+	Rockchip_RV1106_User_Manual_GPIO.pdf
+	Rockchip_Quick_Start_Linux_IPC_SDK_CN.pdf
+	Rockchip_Quick_Start_Linux_IPC_SDK_EN.pdf
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.7.0_20240122.xml
+- BSP
+1. 新增AOV(Always On Video)方案
+
+- RKAIQ
+1. 优化AE统计数据的使用
+2. 修复CCM/LSC/DEHAZE插值错误
+3. 支持快速启动AIQ启动一次或两次
+4. ALGO的API getAtrib添加默认手动设置
+5. 支持单帧模式
+6. 支持设备端j2s4b工具
+7. 支持AI NR
+8. 支持用户AWB OTP
+9. 支持主传感器映射的AWB增益
+
+- Rockit
+1. VI解决PAUSE/RESUME后,FLIP信息丢失
+2. VI LOG整理
+3. VI/VPSS启用深度设置
+4. VENC在用户未设置QP时设置默认QP信息
+5. VENC修复CROP信息设置失败
+6. VENC 支持DUMPSYS
+7. VENC支持动态配置JPEG参数
+8. VENC PACKET支持EOS标志
+9. VPSS 支持AIISP
+10. VDEC支持复位刷新BUF
+11. VDEC 解决H264 AVC BUFFER使用BUG
+12. VDEC-AVC使用自定义LOG系统
+13. AI 支持算法全参
+14. AENC支持动态改变MUTE的长度
+15. 解决AF模块不工作的BUG,在AI-AF-AO数据流中
+16. 解决RGA模块透明度问题
+17. IVS支持硬件缩小/矩形框/区域探测
+18. 支持用户调用API DUMPSYS
+
+- IVA
+1. 更新适配librknnmrt 1.6.0 版本
+2. 更新librockiva 1.9 版本
+3. 更新检测模型，优化检测效果
+
+- DOCS
+1. 新增如下文档：
+       Rockchip_Developer_Guide_Linux_RV1106_ACodec_EN.pdf
+       Rockchip_Developer_Guide_Linux_Sysutil_EN.pdf
+       Rockchip_Developer_Guide_Linux_Rkadk_EN.pdf
+       Rockchip_Developer_Guide_Linux_Rockit_Runtime_EN.pdf
+       Rockchip_Trouble_Shooting_Linux_VENC_EN.pdf
+       Rockchip_Developer_Guide_Linux_RV1106_ACodec_CN.pdf
+       Rockchip_Developer_Guide_RockAA_Utils.pdf
+       Rockchip_Developer_Guide_Linux_Rkadk_CN.pdf
+       Rockchip_Guide_AVS_Calib_Model_CN.pdf
+       Rockchip_RV1106_RV1103_Developer_Guide_Linux_System_Optimization_CN.pdf
+       Rockchip_Trouble_Shooting_Linux_VENC_CN.pdf
+
+2. 更新如下文档：
+       Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_EN.pdf
+       Rockchip_Developer_Guide_Microphone_Array_Tuning.pdf
+       Rockchip_Developer_Guide_Sound_Event_Detection.pdf
+       Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_CN.pdf
+       Rockchip_Developer_Guide_Linux_Sysutil_CN.pdf
+       Rockchip_RV1103_User_Manual_GPIO.pdf
+       Rockchip_RV1106_User_Manual_GPIO.pdf
+       Rockchip_Developer_Guide_Linux_Rockit_Runtime_CN.pdf
+       Rockchip_RV1106_RV1103_Developer_Guide_Linux_IPC_Sample_CN.pdf
+       Rockchip_Driver_Guide_VI_CN_v1.1.5.pdf
+       Rockchip_Guide_AVS_Calib_Product_CN.pdf
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.6.0_20230824.xml
+
+- BSP
+1. 解决RV1106 DDR颗粒低概率兼容性问题
+2. 优化NPU/编码/ISP以及系统性能，减少约40%的CPU使用率
+3. 解决SD卡漏电问题
+
+- RKAIQ
+1. 优化性能，减少CPU使用率
+2. 优化内存占用
+3. 调整默认输出的LOG
+4. 解决场景切换时，IQ中子场景awb光源数不一致引起的coredump
+5. 新增AFD（auto fliker detection）算法
+6. AF 移除未使用的接口rk_aiq_user_api2_af_getCustomAfRes
+7. CCM新增CALIB相关接口
+    rk_aiq_user_api2_accm_SetIqParam
+    rk_aiq_user_api2_accm_GetIqParam
+    rk_aiq_user_api2_accm_v2_SetIqParam
+8. AWB新增CALIB 接口
+    rk_aiq_user_api2_awbV32_SetIQAutoExtPara
+    rk_aiq_user_api2_awbV32_GetIQAutoExtPara
+    rk_aiq_user_api2_awbV32_SetIQAutoPara
+    rk_aiq_user_api2_awbV32_GetIQAutoPara
+    rk_aiq_user_api2_accm_v2_GetIqParam
+
+9. IQ 参数及API结构体更新：
+	10.1 BLC参数部分动态数组改成定长数组
+	10.2 AF PDAF参数更新
+	10.3 CCM 参数移除MANUAL配置
+	10.4 AWB 参数增加CalibDbV2_Awb_Ava_Site_Rec_t
+	10.5 SHARP 参数及API结构体部分更新，添加一些 SIGMA 相关成员
+
+- Rockit更新到V1.4.57
+1. IVS支持获取RAW格式
+2. 解决VI获取MIRROR FLIP信息的错误
+3. 增加音频模块相关返回值判断
+4. 解决编码切换到H265概率冲内存问题
+5. 解决VPSS像素转换失败问题
+6. 新增IVS支持输出运动面积功能
+7. 解决编码器概率FD异常关闭问题
+8. 新增VO支持ALPHA合成
+9. 新增支持模块强行丢帧
+10. 解决VENC帧率设置错误问题
+11. 解决RGN低概率死锁问题
+12. 新增AVS支持DUMPSYS抓取帧功能
+13. 新增AVS支持画中画模式功能
+
+- DOCS
+1. 新增如下文档：
+        Rockchip_Developer_Guide_Linux_Sysutil_EN.pdf
+        Rockchip_Developer_Guide_USB_EN.pdf
+        Rockchip_Developer_Guide_USB_CN.pdf
+        Rockchip_Developer_Guide_I2C_EN.pdf
+        Rockchip_Developer_Guide_Linux_SARADC_EN.pdf
+        Rockchip_Developer_Guide_I2C_CN.pdf
+        Rockchip_Developer_Guide_Linux_SARADC_CN.pdf
+        Rockchip_Developer_Guide_RGB_MCU_CN.pdf
+        Rockchip_Developer_Guide_SDMMC_SDIO_eMMC_CN.pdf
+        Rockchip_Developer_Guide_CPUFreq_EN.pdf
+        Rockchip_Developer_Guide_UART_EN.pdf
+        Rockchip_Developer_Guide_CPUFreq_CN.pdf
+        Rockchip_Developer_Guide_UART_CN.pdf
+        Rockchip_Developer_Guide_TEE_SDK_EN.pdf
+        Rockchip_Developer_Guide_TEE_SDK_CN.pdf
+        Rockchip_Trouble_Shooting_Linux_Audio_EN.pdf
+        Rockchip_Trouble_Shooting_Linux_Audio_CN.pdf
+        Rockchip_Developer_Guide_Linux_PWM_EN.pdf
+        Rockchip_RV1106_RV1103_Developer_Guide_Linux_System_Optimization_CN.pdf
+2. 更新如下文档：
+        Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_EN.pdf
+        Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_CN.pdf
+        Rockchip_Developer_Guide_Linux_Sysutil_CN.pdf
+        Rockchip_Developer_Guide_RGB_MCU_CN.pdf
+        Rockchip_Developer_Guide_MPI.pdf
+        Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_EN.pdf
+        Rockchip_Developer_Guide_Linux_Flash_Open_Source_Solution_CN.pdf
+        Rockchip_User_Guide_SDK_Application_And_Synchronization_CN.pdf
+        Rockchip_Developer_Guide_RV1106_RV1126_AVS_CN.pdf
+        Rockchip_Developer_Guide_UBoot_Nextdev_CN.pdf
+        Rockchip_Developer_Guide_Microphone_Array_Tuning.pdf
+        Rockchip_Developer_Guide_Sound_Event_Detection.pdf
+        Rockchip_Developer_Guide_Linux_PWM_CN.pdf
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.5.0_20230328.xml
+
+- RKAIQ
+1. 支持ISP d-gain for rv1106
+2. 支持rv1106的rkstream和media_enquiry
+3. 添加gc8034/ov13855 iqfiles
+4. 更新isp32_lite的内核驱动程序头文件
+5. 修复初始化参数匹配问题
+7. 修复libc检查问题
+8. 修复awbV32_GetAttrib中的访问冲突
+9. 修复memcpy Expert_mode参数中的错误
+10. 修复堆栈破坏检测
+11. 重命名get_env_value函数以避免冲突
+
+- VIDEO
+1. 新增AVS模块
+2. 新增支持媒体CMA内存释放给系统，用于OTA
+3. AI: 支持文件输入
+4. AI: AED增加当前获取当前增益的调试接口
+5. AI: VQE开启时间戳概率性错误
+7. VI: 支持CIF
+8. VI: P/N切换失败
+9. VI: 完善DUMP信息
+10. VI/VPSS: 解决MediaBuffer无法从Buffer句柄获取虚拟地址
+11. LOG: 修复内存泄漏
+
+- BSP
+1. 双摄: 解决ISP输入分辨率大于200w时，冲内存问题
+2. 双摄: 解决rkcif overflow问题
+
+- IVA
+1. 更新前级目标检测模型选择接口
+2. 检测模块支持单独配置检测区域和每个类别分数阈值
+3. 周界功能区域点数支持32个点，区域数量增加至8个，每次结果增加返回规则ID
+4. 人脸抓拍接口更新，支持上报JPEG编码大图
+5. 检测模型更新，详见models下readme
+
+- DOCS
+1. 更新Rockit的API文档Rockchip_Developer_Guide_MPI.pdf到V1.4.44
+2. 新增双目拼接产线标定指南Rockchip_Developer_Guide_RV1106_RV1126_AVS_CN.pdf
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.4.1_20230228.xml
+
+- RKAIQ
+1. 解决libsmartIr.so和librkaiq.so符号xcam_get_enviroment_value冲突问题
+
+- VIDEO
+1. 解决使用VPSS无法获取数据问题
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.4.0_20230210.xml
+
+- RKAIQ 更新至4.0x9.b-rc1
+1. AWB/LSC：支持OTP功能
+2. AE：解决双摄失效问题
+3. 支持通过物理id号枚举sensor信息
+
+- VIDEO & AUDIO
+1. 新增rockit_full.so 支持全功能模块
+2. VI/VENC：优化框架移除TASK NODE
+3. VPSS：通道SIZE支持动态设置
+4. VI：支持EPZT，双目、ISP mirror/flip
+5. VI：重构上层逻辑，支持多进程，COVER/MOSAIC最大个数调整到12，支持打在PIPE上
+6. VDEC：新增2种H264软件解码器，可以通过宏来选择
+7. VO：新增默认方式的连接类型，对于特殊的连接模式，可以使用DRM驱动模式的连接类型，多个连接器可以通过设备ID选择
+8. 支持放大卷绕
+9. 升级音频算法库，优化音频线程及其利用率
+10. 升级卷绕BIN 到1.54，解决特定场景图像上下颠倒的问题
+11. 支持RGN OVERLAY使用1个BUF, 但是只能打在一个通道上
+12. 编码器码流支持ring buffer
+13. 增加音频算法接口虚函数
+14. 优化LOG系统，支持颜色打印
+
+- BSP
+1. 增加安全启动功能以及文档说明
+
+- DOCS
+1. 更新Rockchip_Quick_Start_Linux_IPC_SDK_CN.pdf 到V1.2.1
+2. 更新Developer_Guide_Linux_RKIPC 到V1.5.0
+3. 增加部分英文文档
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.3.1_20221108.xml
+
+- TOOLS
+1. 更新工具SocToolKit v1.85
+2. 更新工具Linux_Upgrade_Tool v2.17
+
+- VIDEO
+1. 解决卷绕时特定分辨率切换有横条纹问题
+2. 解决跨进程打COVER导致内存变大问题
+3. 增加COVER自动计算位置和宽高对齐功能
+4. 更新RGN限制性说明文档
+
+--------------------------------------------------------------------------------
+rv1106_ipc_linux/rv1106_ipc_linux_v1.3.0_20221102.xml
+
+- AUDIO
+1. AO支持3A
+2. AMIX支持获取当前音量
+3. AENC支持静音模式
+
+- VIDEO
+1. VI: 解决设置采样率内存泄漏
+2. VI: 解决卷绕行设置错误
+3. VI: 支持多线程GET同一通道以及支持动态设置帧率
+4. VI/VENC: 增加卷绕限制参数的过滤
+5. VI/VENC/SYS/RGN支持跨进程
+6. VI/COVER/MOSAIC: 解决只能在流启动后设置问题
+7. IVS: 支持输出矩形
+8. VENC: 支持帧级QP/支持场景设置/支持设置LTR COUNT
+9. VENC/JPEG: 支持qfactor
+10. VENC: 解决切换分辨率后qp改变问题
+11. VPSS: 支持旋转
+12. JPEG: 解决FIXQP设置失败问题
+13. 增加TDE支持
+14. 解决分辨率概率切换失败问题
+
+- RKAIQ
+1. AE：解决参数错误以及双摄AE统计问题
+2. AWB: 更新接口的结构体信息
+3. DRC/DEHAZE：解决API调用问题
+4. DRC：解决软件配置逻辑问题以及更改IIR帧的参数
+5. IQ：更新SC230AI/GC4023/SC3338/GC2093/OS04A10/SC031GS

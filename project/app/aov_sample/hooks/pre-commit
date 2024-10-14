@@ -1,0 +1,32 @@
+#!/bin/sh
+set -x
+
+out_file="./fmt_df.txt"
+cur_dir=$(pwd)
+#script_dir=tools/
+
+echo "[git-hook]: before commit, format code use format.sh ..."
+
+#cd $script_dir
+./format.sh 
+
+cd $cur_dir
+
+git status -s | grep "^ M" > $out_file
+
+if [ -s $out_file ]
+then {
+    echo "[git-hook]: code changed after formating, please commit again."
+    rm $out_file
+    echo "[git-hook]: git status below:"
+    git status
+    exit 1
+} else {
+    echo "[git-hook]: nothing change after formating, commit continues."
+    if [ -f $out_file ]
+    then {
+        rm $out_file
+    } fi
+    exit 0
+} fi
+

@@ -1,0 +1,16 @@
+commit 424abb9bffcc6f077daa00572bca1301c757e079
+Author: Yandong Lin <yandong.lin@rock-chips.com>
+Date:   Thu Apr 25 11:21:07 2024 +0800
+
+    [mpp_enc]: fix wrap enc sw timeout when resolution switch
+    
+    1. Drop task if resolution mismatch that will happen in resolution switch
+    case.
+    2. In the case of wrapping, when switching resolutions, need to ensure
+    that the wrapping frame being encoded finish.
+    
+    relative redmine:
+    https://redmine.rock-chips.com/issues/479306
+    
+    Signed-off-by: Yandong Lin <yandong.lin@rock-chips.com>
+    Change-Id: I68777eb1bb2a2ddd9bad6ee2f610ff6d3e487544

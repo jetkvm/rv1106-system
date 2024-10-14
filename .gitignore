@@ -1,0 +1,5 @@
+IMAGE/*
+output/*
+!IMAGE/.gitkeep
+!output/.gitkeep
+.BoardConfig.mk

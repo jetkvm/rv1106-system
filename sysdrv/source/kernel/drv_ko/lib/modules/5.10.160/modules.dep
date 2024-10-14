@@ -1,0 +1,31 @@
+kernel/crypto/cmac.ko:
+kernel/crypto/sha256_generic.ko: kernel/lib/crypto/libsha256.ko
+kernel/crypto/gf128mul.ko:
+kernel/crypto/ctr.ko:
+kernel/crypto/gcm.ko:
+kernel/crypto/ccm.ko:
+kernel/crypto/aes_generic.ko: kernel/lib/crypto/libaes.ko
+kernel/crypto/ghash-generic.ko: kernel/crypto/gf128mul.ko
+kernel/drivers/phy/rockchip/phy-rockchip-csi2-dphy-hw.ko:
+kernel/drivers/phy/rockchip/phy-rockchip-csi2-dphy.ko:
+kernel/drivers/video/rockchip/rga3/rga3.ko:
+kernel/drivers/video/rockchip/rve/rve.ko:
+kernel/drivers/video/rockchip/dvbm/rk_dvbm.ko:
+kernel/drivers/media/i2c/os04a10.ko:
+kernel/drivers/media/i2c/sc200ai.ko:
+kernel/drivers/media/i2c/sc3336.ko:
+kernel/drivers/media/i2c/sc401ai.ko:
+kernel/drivers/media/i2c/sc4336.ko:
+kernel/drivers/media/i2c/sc450ai.ko:
+kernel/drivers/media/i2c/sc530ai.ko:
+kernel/drivers/media/i2c/gc2053.ko:
+kernel/drivers/media/i2c/imx415.ko:
+kernel/drivers/media/platform/rockchip/cif/video_rkcif.ko:
+kernel/drivers/media/platform/rockchip/isp/video_rkisp.ko: kernel/drivers/video/rockchip/dvbm/rk_dvbm.ko
+kernel/drivers/rknpu/rknpu.ko:
+kernel/net/ipv6/ipv6.ko:
+kernel/net/wireless/cfg80211.ko:
+kernel/net/mac80211/mac80211.ko: kernel/lib/crypto/libarc4.ko kernel/net/wireless/cfg80211.ko
+kernel/lib/crypto/libaes.ko:
+kernel/lib/crypto/libarc4.ko:
+kernel/lib/crypto/libsha256.ko:
