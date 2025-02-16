@@ -11,6 +11,7 @@ LEASE_FILE="/run/udhcpc.$interface.info"
 [ -e $RESOLV_CONF ] || touch $RESOLV_CONF
 [ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
 [ -n "$subnet" ] && NETMASK="netmask $subnet"
+[ -n "$mtu" ] && MTU="mtu $mtu"
 
 case "$1" in
 	deconfig)
@@ -42,7 +43,7 @@ case "$1" in
 		if [ -x /usr/sbin/avahi-autoipd ]; then
 			/usr/sbin/avahi-autoipd -k $interface
 		fi
-		/sbin/ifconfig $interface $ip $BROADCAST $NETMASK
+		/sbin/ifconfig $interface $ip $BROADCAST $NETMASK $MTU
 
 		if [ -n "$router" ] ; then
 			echo "deleting routers"
@@ -122,3 +123,4 @@ for hook in "${HOOK_DIR}/"*; do
 done
 
 exit 0
+
