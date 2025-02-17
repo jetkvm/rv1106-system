@@ -2,7 +2,7 @@
 <div align="center">
   <img alt="JetKVM Logo" src="https://jetkvm.com/logo-blue.png" height="40">
 
-**Firmware**
+**rv1106 System**
 
 [Website](https://jetkvm.com) • [Issues](https://github.com/jetkvm/kvm/issues) • [Docs](https://jetkvm.com/docs) • [Discord](https://jetkvm.com/discord)
 
