@@ -32,10 +32,6 @@ jobs:
         run: |
           echo "Version: $BUILD_VERSION"
 
-          # check if current branch is main, if not then append branch name and commit 
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            export BUILD_VERSION="$BUILD_VERSION-$(echo $GITHUB_REF | sed 's/refs\/heads\///' | sed 's/\//-/')-$(date +%Y%m%d%H%M)"
-          fi
           ./update_app.sh
           ./build.sh lunch BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
           ./build.sh
