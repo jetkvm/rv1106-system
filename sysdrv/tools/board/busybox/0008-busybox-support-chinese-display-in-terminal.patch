@@ -4,6 +4,9 @@ Date: Wed, 23 Aug 2017 11:33:47 +0800
 Subject: [PATCH] busybox: support chinese display in terminal
 
 Signed-off-by: hero.huang <hero.huang@rock-chips.com>
+
+** This patch has been ported to 1.36.1 and git commit hash might be wrong **
+
 ---
  libbb/printable_string.c | 4 +---
  libbb/unicode.c          | 4 ++--
@@ -35,7 +38,7 @@ diff --git a/libbb/unicode.c b/libbb/unicode.c
 index 9c4da50..c7eba06 100644
 --- a/libbb/unicode.c
 +++ b/libbb/unicode.c
-@@ -1019,7 +1019,7 @@ static char* FAST_FUNC unicode_conv_to_printable2(uni_stat_t *stats, const char
+@@ -1027,7 +1027,7 @@
  					while ((int)--width >= 0);
  					break;
  				}
@@ -44,15 +47,12 @@ index 9c4da50..c7eba06 100644
  				src++;
  			}
  			*d = '\0';
-@@ -1027,7 +1027,7 @@ static char* FAST_FUNC unicode_conv_to_printable2(uni_stat_t *stats, const char
+@@ -1035,7 +1035,7 @@
  			d = dst = xstrndup(src, width);
  			while (*d) {
  				unsigned char c = *d;
--				if (c < ' ' || c >= 0x7f)
-+				if (c < ' ')
+-				if (c < ' ')
++				if (c < ' ' || c >= 0x7f)
  					*d = '?';
  				d++;
  			}
--- 
-1.9.1
-
