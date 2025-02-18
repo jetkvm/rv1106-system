@@ -6,6 +6,9 @@ Subject: [PATCH] halt: Support rebooting with arg
 Support passing reboot arg(e.g. loader, fastboot, etc.) to kernel.
 
 Signed-off-by: Jeffy Chen <jeffy.chen@rock-chips.com>
+
+** This patch has been ported to 1.36.1 and git commit hash might be wrong **
+
 ---
  init/halt.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 48 insertions(+)
@@ -14,7 +17,7 @@ diff --git a/init/halt.c b/init/halt.c
 index f69b897..523c925 100644
 --- a/init/halt.c
 +++ b/init/halt.c
-@@ -83,6 +83,8 @@
+@@ -93,6 +93,8 @@
  
  #include "libbb.h"
  #include "reboot.h"
@@ -23,7 +26,7 @@ index f69b897..523c925 100644
  
  #if ENABLE_FEATURE_WTMP
  #include <sys/utsname.h>
-@@ -109,6 +111,47 @@ static void write_wtmp(void)
+@@ -119,6 +121,49 @@
  #define write_wtmp() ((void)0)
  #endif
  
@@ -68,10 +71,12 @@ index f69b897..523c925 100644
 +			LINUX_REBOOT_MAGIC2,
 +			LINUX_REBOOT_CMD_RESTART2, arg);
 +}
- 
- int halt_main(int argc, char **argv) MAIN_EXTERNALLY_VISIBLE;
- int halt_main(int argc UNUSED_PARAM, char **argv)
-@@ -186,6 +229,11 @@ int halt_main(int argc UNUSED_PARAM, char **argv)
++
++
+ #if ENABLE_FEATURE_WAIT_FOR_INIT
+ /* In Linux, "poweroff" may be spawned even before init.
+  * For example, with ACPI:
+@@ -239,6 +284,10 @@
  						CONFIG_TELINIT_PATH);
  			}
  		}
@@ -79,10 +84,6 @@ index f69b897..523c925 100644
 +		/* Handle rebooting with arg */
 +		if (signals[which] == SIGTERM && argc > 1 && argv[1][0] != '-')
 +			rc = reboot_with_arg(argv[1]);
-+
  	} else {
  		rc = reboot(magic[which]);
  	}
--- 
-2.11.0
-

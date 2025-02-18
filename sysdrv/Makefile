@@ -229,7 +229,7 @@ ifeq ($(SYSDRV_BUILD_RECOVERY),y)
 BUSYBOX_CFG := config_tiny_arm
 endif
 BUSYBOX_CFG ?= config_normal
-BUSYBOX_VER ?= busybox-1.27.2
+BUSYBOX_VER ?= busybox-1.36.1
 BUSYBOX_DIR := $(SYSDRV_DIR)/source/busybox
 SYSDRV_BUSYBOX_OBJS_OUTPUT_DIR ?= $(BUSYBOX_DIR)/objs_$(BUSYBOX_CFG)
 
@@ -547,8 +547,10 @@ drv: prepare
 	echo -e "$(C_GREEN) ==sysdrv== generating modules.dep $(C_NORMAL)"
 	find $(KERNEL_DIR_DRV_KO)/lib/modules/* \
 		-name "modules.dep" -type f -exec cp -fav {} $(SYSDRV_KERNEL_MOD_PATH) \;
-	awk -i inplace -v INPLACE_SUFFIX=.orig \
-		'{gsub(/[^\/ ]+\//, ""); print}' $(SYSDRV_KERNEL_MOD_PATH)/modules.dep
+	awk \
+		'{gsub(/[^\/ ]+\//, ""); print}' $(SYSDRV_KERNEL_MOD_PATH)/modules.dep > $(SYSDRV_KERNEL_MOD_PATH)/modules.dep.tmp && \
+		cp -fv $(SYSDRV_KERNEL_MOD_PATH)/modules.dep $(SYSDRV_KERNEL_MOD_PATH)/modules.dep.orig && \
+		mv -fv $(SYSDRV_KERNEL_MOD_PATH)/modules.dep.tmp $(SYSDRV_KERNEL_MOD_PATH)/modules.dep
 
 	$(call MAROC_COPY_PKG_TO_SYSDRV_OUTPUT, $(OUTPUT_ROOTFS_SOURCE_DIR), $(SYSDRV_KERNEL_MOD_PATH), SELF)
 
