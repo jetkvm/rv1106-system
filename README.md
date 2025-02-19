@@ -153,7 +153,6 @@ All variables for customizing builds—like CPU architecture, boot medium, parti
 | **RK_PARTITION_CMD_IN_ENV** | Defines partition layouts for the firmware. |
 | **RK_APP_TYPE**        | Determines which reference apps to include. |
 | **RK_ENABLE_WIFI**     | Enables Wi-Fi functionality for the JetKVM firmware. |
-| **RK_ARCH**            | `arm` or `arm64`: Defines whether to compile a 32-bit or 64-bit program. |
 | **RK_CHIP**            | **Cannot be modified**: Different chips correspond to different SDKs. |
 | **RK_TOOLCHAIN_CROSS** | **Cannot be modified**: Defines the cross-compilation toolchain. |
 
