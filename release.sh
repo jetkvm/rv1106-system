@@ -1,5 +1,6 @@
 #!/bin/bash
 set -eE
+set -o pipefail
 set -x
 
 export BUILD_VERSION=$(cat VERSION)
@@ -10,8 +11,9 @@ if rclone lsf r2://jetkvm-update/system/$BUILD_VERSION/ | grep -q .; then
     exit 1
 fi
 
+./build.sh lunch BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
 ./build.sh
-sha256sum output/image/o | awk '{print $1}' > output/image/update_ota.tar.sha256
+sha256sum output/image/update_ota.tar | awk '{print $1}' > output/image/update_ota.tar.sha256
 sha256sum output/image/update.img | awk '{print $1}' > output/image/update.img.sha256
 
 # Check if the version already exists
