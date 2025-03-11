@@ -48,13 +48,17 @@ jobs:
           name: Full Image
           path: output/image/update.img
           retention-days: 30
-      - name: Upload buildkit for JetKVM native
+      - name: Create compressed buildkit
+        run: |
+          tar  "-I zstd -10 -T0 --long=31" -cf \
+            buildkit.tar.zst \
+            tools/linux/toolchain \
+            media/out/include \
+            media/out/lib
+      - name: Upload buildkit
         uses: actions/upload-artifact@v4
         with:
           name: jetkvm-native-buildkit
-          path: |
-            tools/linux/toolchain
-            media/out/include
-            media/out/lib
+          path: buildkit.tar.zst
           retention-days: 30
-          compression-level: 9
+          compression-level: 0
