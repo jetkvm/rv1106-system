@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - dev
+      - chore/jetkvm-native-buildkit
 
 jobs:
   build:
@@ -46,4 +47,13 @@ jobs:
         with:
           name: Full Image
           path: output/image/update.img
+          retention-days: 30
+      - name: Upload buildkit for JetKVM native
+        uses: actions/upload-artifact@v4
+        with:
+          name: jetkvm-native-buildkit
+          path: |
+            tools/linux/toolchain
+            media/out/include
+            media/out/lib
           retention-days: 30
