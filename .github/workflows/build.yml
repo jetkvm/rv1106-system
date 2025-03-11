@@ -57,3 +57,4 @@ jobs:
             media/out/include
             media/out/lib
           retention-days: 30
+          compression-level: 9
