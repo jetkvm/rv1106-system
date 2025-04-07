@@ -26,13 +26,6 @@ sudo apt-get install -y --no-install-recommends \
   bc openssl flex bison libssl-dev python3 python-is-python3 texinfo kmod cmake
 ```
 
-Optional dependencies for minimal OS installs or devcontainers:
-```bash
-sudo apt-get install -y --no-install-recommends \
-  bc flex bison python3 python-is-python3 texinfo \
-  gawk
-```
-
 #### 2. Select the Board Configuration
 
 ```bash
