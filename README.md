@@ -26,6 +26,13 @@ sudo apt-get install -y --no-install-recommends \
   bc openssl flex bison libssl-dev python3 python-is-python3 texinfo kmod cmake
 ```
 
+Optional dependencies for minimal OS installs or devcontainers:
+```bash
+sudo apt-get install -y --no-install-recommends \
+  bc flex bison python3 python-is-python3 texinfo \
+  gawk
+```
+
 #### 2. Select the Board Configuration
 
 ```bash
@@ -181,6 +188,20 @@ Please also review our Code of Conduct to keep the community welcoming and const
 
 ## Notices
 
-- **Avoid Copying from Windows** - Moving the source code on Windows might break file permissions or symbolic links. Always handle the codebase in a native Linux environment.
+### Avoid Copying from Windows
+Moving the source code on Windows might break file permissions or symbolic links. Always handle the codebase in a native Linux environment.
+
+### MacOS has a case-insensitive filesystem by default
+This may cause a git clone on this repo into a MacOS environment to always have file changes. Instead, clone it into a case-sensitive filesystem mount and edit from there:
+```sh
+hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 10g -volname CaseSensitive ~/CaseSensitive.dmg.sparseimage
+hdiutil attach ~/CaseSensitive.dmg.sparseimage
+cd /Volumes/CaseSensitive
+
+git clone git@github.com:jetkvm/rv1106-system.git
+```
+
+### Libraries used by this repo may not existing for arm64 architectures
+Packages like `g++-multilib` and `gcc-multilib` are not published to the standard debian apt repositories for amd64. You may need to resort to running this on an x86/amd64 machine, or in a virtual machine/devcontainer for amd64.
 
 Happy Building - With this SDK, you’ll have full control of your JetKVM firmware—tailoring it to your hardware, storage preferences, and custom application needs.

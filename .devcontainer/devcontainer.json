@@ -1,0 +1,6 @@
+{
+	"name": "JetKVM",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+	"runArgs": ["--platform=linux/amd64" ],
+	"features": {}
+}
