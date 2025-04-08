@@ -96,7 +96,6 @@ export RK_ENABLE_SAMPLE=n
 
 export RK_ENABLE_NFTABLES=y
 
-export RK_ENABLE_EXFATPROGS=y
 
 # specify post.sh for delete/overlay files
 export RK_POST_BUILD_SCRIPT=rv1106-jetkvm-post.sh

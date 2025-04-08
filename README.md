@@ -19,7 +19,7 @@ An official build system for JetKVM firmware, enabling you to compile and custom
 ```bash
 sudo apt-get update &&
 sudo apt-get install -y --no-install-recommends \
-  build-essential \
+  build-essential autoconf autotools-dev \
   device-tree-compiler \
   gperf g++-multilib gcc-multilib \
   libnl-3-dev libdbus-1-dev libelf-dev libmpc-dev dwarves \
