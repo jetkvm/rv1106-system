@@ -13,6 +13,7 @@ tools_board-builds: \
 		board-build-i2c_tools \
 		board-build-dosfstools \
 		board-build-exfatprogs \
+		board-build-nftables \
 		board-build-mtd_utils \
 		board-build-dropbear
 	@echo "build tools board done"
@@ -34,6 +35,7 @@ tools_board-clean:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/i2c-tools distclean
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/dosfstools distclean
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/exfatprogs distclean
+	$(MAKE) -C $(SYSDRV_DIR)/tools/board/nftables distclean
 
 board-build-toolkits:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/toolkits
@@ -108,6 +110,12 @@ board-build-dosfstools:
 board-build-exfatprogs:
 ifeq ($(ENABLE_EXFATPROGS),y)
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/exfatprogs;
+endif
+
+
+board-build-nftables:
+ifeq ($(ENABLE_NFTABLES),y)
+	$(MAKE) -C $(SYSDRV_DIR)/tools/board/nftables;
 endif
 
 board-build-dropbear:
