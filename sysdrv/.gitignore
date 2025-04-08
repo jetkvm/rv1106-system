@@ -21,6 +21,8 @@ tools/board/sysstat/sysstat-*/
 tools/board/toolkits/openssl/openssl-*/
 tools/board/toolkits/zlib/zlib-*/
 tools/board/valgrind/valgrind-*/
+tools/board/nftables/lib*/
+tools/board/nftables/nftables*/
 tools/pc/toolkits/resource_tool
 util-linux-*/
 source/busybox/objs_config_normal/
