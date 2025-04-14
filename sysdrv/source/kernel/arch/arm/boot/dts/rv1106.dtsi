@@ -387,6 +387,11 @@
 		rockchip,thermal-zone = "soc-thermal";
 	};
 
+	secure_otp: secure-otp {
+		compatible = "rockchip,secure-otp";
+		rockchip,otp-size = <448>;
+	};
+
 	thermal_zones: thermal-zones {
 		soc_thermal: soc-thermal {
 			polling-delay-passive = <20>; /* milliseconds */
