@@ -236,7 +236,7 @@
 		optee: optee {
 			compatible = "linaro,optee-tz";
 			method = "smc";
-			status = "okay";
+			status = "disabled";
 		};
 	};
 
