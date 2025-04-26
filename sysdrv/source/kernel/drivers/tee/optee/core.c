@@ -565,6 +565,8 @@ static optee_invoke_fn *get_invoke_func(struct device *dev)
 		pr_warn("missing \"method\" property\n");
 		return ERR_PTR(-ENXIO);
 	}
+	
+	pr_info("OPTEE-DEBUG: method: %s\n", method);
 
 	if (!strcmp("hvc", method))
 		return optee_smccc_hvc;
@@ -655,6 +657,12 @@ static int optee_probe(struct platform_device *pdev)
 	 */
 	if (is_kdump_kernel())
 		return -ENODEV;
+
+	pr_info("OPTEE-DEBUG: probing for conduit method.\n");
+	pr_info("OPTEE-DEBUG: pdev->name: %s\n", pdev->name);
+	pr_info("OPTEE-DEBUG: pdev->id: %d\n", pdev->id);
+	pr_info("OPTEE-DEBUG: pdev->dev.devt: %d\n", pdev->dev.devt);
+	pr_info("OPTEE-DEBUG: pdev->dev.id: %d\n", pdev->dev.id);
 
 	invoke_fn = get_invoke_func(&pdev->dev);
 	if (IS_ERR(invoke_fn))
