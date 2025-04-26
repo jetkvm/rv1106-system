@@ -668,9 +668,9 @@ static int optee_probe(struct platform_device *pdev)
 	if (IS_ERR(invoke_fn))
 		return PTR_ERR(invoke_fn);
 
-	pr_info("OPTEE-DEBUG: invoke_fn got\n", invoke_fn);
+	pr_info("OPTEE-DEBUG: invoke_fn got %p\n", invoke_fn);
 
-	pr_info("OPTEE-DEBUG: optee_msg_api_uid_is_optee_api\n", invoke_fn);
+	pr_info("OPTEE-DEBUG: optee_msg_api_uid_is_optee_api: %p\n", invoke_fn);
 	if (!optee_msg_api_uid_is_optee_api(invoke_fn)) {
 		pr_warn("api uid mismatch\n");
 		return -EINVAL;
