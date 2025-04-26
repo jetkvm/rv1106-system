@@ -668,23 +668,30 @@ static int optee_probe(struct platform_device *pdev)
 	if (IS_ERR(invoke_fn))
 		return PTR_ERR(invoke_fn);
 
+	pr_info("OPTEE-DEBUG: invoke_fn got\n", invoke_fn);
+
+	pr_info("OPTEE-DEBUG: optee_msg_api_uid_is_optee_api\n", invoke_fn);
 	if (!optee_msg_api_uid_is_optee_api(invoke_fn)) {
 		pr_warn("api uid mismatch\n");
 		return -EINVAL;
 	}
 
+	pr_info("OPTEE-DEBUG: optee_msg_get_os_revision\n");
 	optee_msg_get_os_revision(invoke_fn);
 
+	pr_info("OPTEE-DEBUG: optee_msg_api_revision_is_compatible\n");
 	if (!optee_msg_api_revision_is_compatible(invoke_fn)) {
 		pr_warn("api revision mismatch\n");
 		return -EINVAL;
 	}
 
+	pr_info("OPTEE-DEBUG: optee_msg_exchange_capabilities\n");
 	if (!optee_msg_exchange_capabilities(invoke_fn, &sec_caps)) {
 		pr_warn("capabilities mismatch\n");
 		return -EINVAL;
 	}
 
+	pr_info("OPTEE-DEBUG: optee_config_dyn_shm\n");
 	/*
 	 * Try to use dynamic shared memory if possible
 	 */
@@ -709,6 +716,7 @@ static int optee_probe(struct platform_device *pdev)
 	optee->invoke_fn = invoke_fn;
 	optee->sec_caps = sec_caps;
 
+	pr_info("OPTEE-DEBUG: tee_device_alloc\n");
 	teedev = tee_device_alloc(&optee_desc, NULL, pool, optee);
 	if (IS_ERR(teedev)) {
 		rc = PTR_ERR(teedev);
@@ -716,6 +724,7 @@ static int optee_probe(struct platform_device *pdev)
 	}
 	optee->teedev = teedev;
 
+	pr_info("OPTEE-DEBUG: tee_device_alloc\n");
 	teedev = tee_device_alloc(&optee_supp_desc, NULL, pool, optee);
 	if (IS_ERR(teedev)) {
 		rc = PTR_ERR(teedev);
@@ -723,10 +732,12 @@ static int optee_probe(struct platform_device *pdev)
 	}
 	optee->supp_teedev = teedev;
 
+	pr_info("OPTEE-DEBUG: tee_device_register\n");
 	rc = tee_device_register(optee->teedev);
 	if (rc)
 		goto err;
 
+	pr_info("OPTEE-DEBUG: tee_device_register\n");
 	rc = tee_device_register(optee->supp_teedev);
 	if (rc)
 		goto err;
@@ -751,15 +762,19 @@ static int optee_probe(struct platform_device *pdev)
 	 * kexec booting from an older kernel that did not properly cleanup the
 	 * shm cache.
 	 */
+	pr_info("OPTEE-DEBUG: optee_disable_unmapped_shm_cache\n");
 	optee_disable_unmapped_shm_cache(optee);
 
+	pr_info("OPTEE-DEBUG: optee_enable_shm_cache\n");
 	optee_enable_shm_cache(optee);
 
 	if (optee->sec_caps & OPTEE_SMC_SEC_CAP_DYNAMIC_SHM)
 		pr_info("dynamic shared memory is enabled\n");
 
+	pr_info("OPTEE-DEBUG: platform_set_drvdata\n");
 	platform_set_drvdata(pdev, optee);
 
+	pr_info("OPTEE-DEBUG: optee_enumerate_devices\n");
 	rc = optee_enumerate_devices(PTA_CMD_GET_DEVICES);
 	if (rc) {
 		optee_remove(pdev);
