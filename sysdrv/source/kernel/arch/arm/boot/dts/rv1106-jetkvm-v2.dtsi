@@ -203,3 +203,7 @@
 &crypto {
     status = "okay";
 };
+
+&optee {
+	status = "okay";
+};

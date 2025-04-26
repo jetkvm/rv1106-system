@@ -389,7 +389,6 @@
 
 	secure_otp: secure-otp {
 		compatible = "rockchip,secure-otp";
-		/* non-protected OEM zone size: 64, offset: */
 		rockchip,otp-size = <64>;
 	};
 
