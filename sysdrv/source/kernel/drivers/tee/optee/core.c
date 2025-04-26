@@ -665,6 +665,8 @@ static int optee_probe(struct platform_device *pdev)
 	pr_info("OPTEE-DEBUG: pdev->dev.id: %d\n", pdev->dev.id);
 
 	invoke_fn = get_invoke_func(&pdev->dev);
+
+	pr_info("OPTEE-DEBUG: after get_invoke_func\n");
 	if (IS_ERR(invoke_fn))
 		return PTR_ERR(invoke_fn);
 
