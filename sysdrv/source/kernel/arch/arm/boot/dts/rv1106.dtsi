@@ -235,7 +235,7 @@
 	firmware {
 		optee: optee {
 			compatible = "linaro,optee-tz";
-			method = "smc";
+			method = "hvc";
 			status = "disabled";
 		};
 	};
