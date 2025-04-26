@@ -236,6 +236,7 @@
 		optee: optee {
 			compatible = "linaro,optee-tz";
 			method = "smc";
+			status = "okay";
 		};
 	};
 
@@ -388,7 +389,7 @@
 
 	secure_otp: secure-otp {
 		compatible = "rockchip,secure-otp";
-		/* non-protected OEM zone size: 64, offset: 448 */
+		/* non-protected OEM zone size: 64, offset: */
 		rockchip,otp-size = <64>;
 	};
 
