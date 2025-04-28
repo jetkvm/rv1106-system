@@ -41,27 +41,35 @@ get_mac_from_i2c() {
     echo "$mac"
 }
 
+create_new_mac() {
+    # Generates a locally administered MAC: 02:XX:XX:XX:XX:XX
+    octets=$(hexdump -n5 -e '5/1 "%02X "' /dev/urandom)
+    set -- $octets
+    echo "02:$1:$2:$3:$4:$5"
+}
+
 network_init()
 {
-	ifup lo
-	mac_address=$(get_mac_from_i2c)
-	ifconfig eth0 down
-	ifconfig eth0 hw ether $mac_address
+    ifup lo
+    mac_address=$(get_mac_from_i2c)
 
-	# ethaddr1=`ifconfig -a | grep "eth.*HWaddr" | awk '{print $5}'`
+    # Check for invalid MACs: all FF, all 00, or empty string
+    if [ "$mac_address" = "FF:FF:FF:FF:FF:FF" ] || \
+       [ "$mac_address" = "00:00:00:00:00:00" ] || \
+       [ -z "$mac_address" ]; then
+        if [ -s /data/ethaddr.txt ]; then
+            # Use stored MAC from file
+            mac_address=$(cat /data/ethaddr.txt)
+        else
+            # Create a new MAC, store in file
+            mac_address=$(create_new_mac)
+            echo "$mac_address" > /data/ethaddr.txt
+        fi
+    fi
 
-	# if [ -f /data/ethaddr.txt ]; then
-	# 	ethaddr2=`cat /data/ethaddr.txt`
-	# 	if [ $ethaddr1 == $ethaddr2 ]; then
-	# 		echo "eth HWaddr cfg ok"
-	# 	else
-	# 		ifconfig eth0 down
-	# 		ifconfig eth0 hw ether $ethaddr2
-	# 	fi
-	# else
-	# 	echo $ethaddr1 > /data/ethaddr.txt
-	# fi
-	ifconfig eth0 up && udhcpc -i eth0
+    ifconfig eth0 down
+    ifconfig eth0 hw ether $mac_address
+    ifconfig eth0 up && udhcpc -i eth0
 }
 
 post_chk()
