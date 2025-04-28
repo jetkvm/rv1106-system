@@ -64,13 +64,13 @@ network_init()
 
 	ifconfig eth0 up && (
         hostname=$(hostname 2>/dev/null)
-        # Check valid hostname
-        if echo "$hostname" | grep -Eq '^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'; then
-            udhcpc -i eth0 -x hostname:"$hostname"
-        else
-            udhcpc -i eth0
-        fi
-    )
+            # Check valid hostname
+            if echo "$hostname" | grep -Eq '^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'; then
+                udhcpc -i eth0 -x hostname:"$hostname"
+            else
+                udhcpc -i eth0
+            fi
+        )
 }
 
 post_chk()
