@@ -94,3 +94,5 @@ export RK_ENABLE_ROCKCHIP_TEST=n
 
 export RK_ENABLE_SAMPLE=n
 
+# specify post.sh for delete/overlay files
+export RK_POST_BUILD_SCRIPT=rv1106-jetkvm-post.sh
