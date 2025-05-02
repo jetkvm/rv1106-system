@@ -3,6 +3,8 @@
 JK_SYSTEM_MAC_FILE="/userdata/.mac_address"
 JK_USER_MAC_FILE="/userdata/jetkvm/mac_address"
 
+JK_USER_MAC_FILE2="/data/ethaddr.txt"
+
 get_mac_from_i2c() {
 	local chip_address="${1:-50}"
 	mac=""
@@ -109,6 +111,13 @@ set_up_mac_address() {
 		# if [ "$i2c_mac_address" = "FF:FF:FF:FF:FF:FF" ]; then
 		# 	echo "jetkvm: unable to program mac address to i2c, will fallback to user-defined mac address"
 		# fi
+	fi
+
+	# https://github.com/jetkvm/kvm/issues/375#issuecomment-2836029895
+	if [ -f "$JK_USER_MAC_FILE2" ]; then
+		mac_address=$(cat "$JK_USER_MAC_FILE2")
+		echo "jetkvm: found user-defined MAC address in [$JK_USER_MAC_FILE2]: [$mac_address], moving it to [$JK_USER_MAC_FILE]"
+		mv "$JK_USER_MAC_FILE2" "$JK_USER_MAC_FILE"
 	fi
 
 	# get mac address from file
