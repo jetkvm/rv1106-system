@@ -8,8 +8,8 @@ export LC_ALL=C
 SHELL:=/bin/bash
 
 CURRENT_DIR := $(shell pwd)
-PKG_TARBALL := e2fsprogs-1.43.9.tar.xz
-PKG_NAME := e2fsprogs-1.43.9
+PKG_TARBALL := e2fsprogs-1.47.1.tar.xz
+PKG_NAME := e2fsprogs-1.47.1
 PKG_BIN := out
 
 all:
