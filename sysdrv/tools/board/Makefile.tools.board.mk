@@ -14,7 +14,8 @@ tools_board-builds: \
 		board-build-dosfstools \
 		board-build-exfatprogs \
 		board-build-mtd_utils \
-		board-build-dropbear
+		board-build-dropbear \
+		board-build-curl
 	@echo "build tools board done"
 
 tools_board-clean:
@@ -34,6 +35,7 @@ tools_board-clean:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/i2c-tools distclean
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/dosfstools distclean
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/exfatprogs distclean
+	$(MAKE) -C $(SYSDRV_DIR)/tools/board/curl distclean
 
 board-build-toolkits:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/toolkits
@@ -112,3 +114,8 @@ endif
 
 board-build-dropbear:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/dropbear;
+
+board-build-curl:
+ifeq ($(ENABLE_CURL),y)
+	$(MAKE) -C $(SYSDRV_DIR)/tools/board/curl;
+endif
