@@ -9,6 +9,7 @@ tools/board/eudev/kmod-*/
 tools/board/exfatprogs/exfatprogs-*/
 tools/board/gdb/expat-*/
 tools/board/gdb/gdb-*/
+tools/board/dropbear/dropbear-*/
 tools/board/idb_bootconfig/
 tools/board/memtester/memtester-*/
 tools/board/mtd-utils/mtd-utils-*/
