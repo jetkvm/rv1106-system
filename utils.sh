@@ -46,8 +46,11 @@ busybox_menuconfig() {
     local current_dir=$(dirname "$(readlink -f "$0")")
     export RK_PROJECT_TOOLCHAIN_CROSS=arm-rockchip830-linux-uclibcgnueabihf
     export PATH="${current_dir}/tools/linux/toolchain/${RK_PROJECT_TOOLCHAIN_CROSS}/bin":$PATH
+    local cfg_src="${current_dir}/sysdrv/tools/board/busybox/config_normal"
+    local cfg_dst="${current_dir}/sysdrv/source/busybox/objs_config_normal/.config"
+    cp "${cfg_src}" "${cfg_dst}"
     make -C "${current_dir}/sysdrv" busybox busybox_menuconfig
-    cp "${current_dir}/sysdrv/source/busybox/objs_config_normal/.config" "${current_dir}/sysdrv/tools/board/busybox/config_normal"
+    cp "${cfg_dst}" "${cfg_src}"
     # check if git is installed and the current directory is a git repository
     # if yes, show the diff of the staged files
     if command -v git &> /dev/null && git rev-parse --is-inside-work-tree &> /dev/null; then
