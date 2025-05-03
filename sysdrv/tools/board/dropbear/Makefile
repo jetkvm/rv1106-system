@@ -8,8 +8,8 @@ export LC_ALL=C
 SHELL:=/bin/bash
 
 CURRENT_DIR := $(shell pwd)
-PKG_TARBALL := dropbear-2024.85.tar.bz2
-PKG_NAME := dropbear-2024.85
+PKG_TARBALL := dropbear-2025.88.tar.bz2
+PKG_NAME := dropbear-2025.88
 PKG_BIN := out
 
 PKG_DEP_ZLIB := $(CURRENT_DIR)/../toolkits/zlib
