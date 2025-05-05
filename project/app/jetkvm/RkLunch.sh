@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source /oem/usr/share/jetkvm-lib.sh
+
 rcS()
 {
 	for i in /oem/usr/etc/init.d/S??* ;do
@@ -29,55 +31,34 @@ check_linker()
         [ ! -L "$2" ] && ln -sf $1 $2
 }
 
-get_mac_from_i2c() {
-    mac=""
-    for reg in fa fb fc fd fe ff; do
-        value=$(i2cget -y 1 50 0x$reg)
-        value=$(echo "$value" | sed 's/0x//')
-        mac="${mac}${value}"
-    done
-    mac=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
-    mac=$(echo "$mac" | sed 's/.\{2\}/&:/g; s/:$//')
-    echo "$mac"
-}
-
-create_new_mac() {
-    # Generates a locally administered MAC: 02:XX:XX:XX:XX:XX
-    octets=$(hexdump -n5 -e '5/1 "%02X "' /dev/urandom)
-    set -- $octets
-    echo "02:$1:$2:$3:$4:$5"
-}
-
 network_init()
 {
-    ifup lo
-    mac_address=$(get_mac_from_i2c)
+	ifup lo
+	ifconfig eth0 down
+	set_up_mac_address | tee /dev/kmsg
 
-    # Check for invalid MACs: all FF, all 00, or empty string
-    if [ "$mac_address" = "FF:FF:FF:FF:FF:FF" ] || \
-       [ "$mac_address" = "00:00:00:00:00:00" ] || \
-       [ -z "$mac_address" ]; then
-        if [ -s /data/ethaddr.txt ]; then
-            # Use stored MAC from file
-            mac_address=$(cat /data/ethaddr.txt)
-        else
-            # Create a new MAC, store in file
-            mac_address=$(create_new_mac)
-            echo "$mac_address" > /data/ethaddr.txt
-        fi
-    fi
+	# ethaddr1=`ifconfig -a | grep "eth.*HWaddr" | awk '{print $5}'`
 
-    ifconfig eth0 down
-    ifconfig eth0 hw ether $mac_address
-	  ifconfig eth0 up && (
-        hostname=$(hostname 2>/dev/null)
-        # Check valid hostname
-        if echo "$hostname" | grep -Eq '^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'; then
-            udhcpc -i eth0 -x hostname:"$hostname"
-        else
-            udhcpc -i eth0
-        fi
-    )
+	# if [ -f /data/ethaddr.txt ]; then
+	# 	ethaddr2=`cat /data/ethaddr.txt`
+	# 	if [ $ethaddr1 == $ethaddr2 ]; then
+	# 		echo "eth HWaddr cfg ok"
+	# 	else
+	# 		ifconfig eth0 down
+	# 		ifconfig eth0 hw ether $ethaddr2
+	# 	fi
+	# else
+	# 	echo $ethaddr1 > /data/ethaddr.txt
+	# fi
+  # Check valid hostname and set on dhcp req
+  ifconfig eth0 up && (
+      hostname=$(hostname 2>/dev/null)
+      if echo "$hostname" | grep -Eq '^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'; then
+          udhcpc -i eth0 -x hostname:"$hostname"
+      else
+          udhcpc -i eth0
+      fi
+  )
 }
 
 post_chk()

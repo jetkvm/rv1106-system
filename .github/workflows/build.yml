@@ -30,7 +30,9 @@ jobs:
         run: |
           export BUILD_VERSION=$(cat VERSION)
           # check if current branch is main, if not then append branch name and commit 
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            export BUILD_VERSION="$BUILD_VERSION"
+          elif [ "$GITHUB_REF" != "refs/heads/main" ]; then
             export BUILD_VERSION="$BUILD_VERSION-$(echo $GITHUB_REF | sed 's/refs\/heads\///' | sed 's/\//-/')$(date +%Y%m%d%H%M)"
           fi
 
