@@ -122,10 +122,14 @@ do {									\
 #define MMC_PROFILE_INVALID             0xFFFF
 
 /*
- * Maximum number of sectors of CD with MSF addressing.
- * A bit paranoid value is calculated based on standard
- * and store_cdrom_address() implementation.
- * It is assumed that bigger images will be handled as DVD.
+ * Maximum number of sectors of a CD using MSF (Minute-Second-Frame) addressing.
+ * The value is derived from the CD standard, where the maximum number of sectors
+ * is calculated as (255 minutes * 59 seconds * 74 frames per second). Each frame
+ * corresponds to one sector. The subtraction of (2 * 75) accounts for the lead-in
+ * and lead-out areas, which are not part of the usable data area.
+ * 
+ * This value is used to distinguish between CDs and DVDs. Images larger than this
+ * value are assumed to be DVDs or oversized CDs, which are handled as DVDs.
  */
 #define CD_MAX_MSF_SECTORS	((255 * 59 * 74) - (2 * 75))
 
