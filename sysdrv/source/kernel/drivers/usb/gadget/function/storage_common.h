@@ -121,6 +121,14 @@ do {									\
 #define MMC_PROFILE_HDDVD_RW_DL         0x005A
 #define MMC_PROFILE_INVALID             0xFFFF
 
+/*
+ * Maximum number of sectors of CD with MSF addressing.
+ * A bit paranoid value is calculated based on standard
+ * and store_cdrom_address() implementation.
+ * It is assumed that bigger images will be handled as DVD.
+ */
+#define CD_MAX_MSF_SECTORS	((255 * 59 * 74) - (2 * 75))
+
 #define SK(x)		((u8) ((x) >> 16))	/* Sense Key byte, etc. */
 #define ASC(x)		((u8) ((x) >> 8))
 #define ASCQ(x)		((u8) (x))
@@ -140,6 +148,7 @@ struct fsg_lun {
 	unsigned int	ro:1;
 	unsigned int	removable:1;
 	unsigned int	cdrom:1;
+	unsigned int	cd_as_dvd:1; /* Handle big CD as DVD if cdrom == 1 */
 	unsigned int	prevent_medium_removal:1;
 	unsigned int	registered:1;
 	unsigned int	info_valid:1;
