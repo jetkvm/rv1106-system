@@ -15,7 +15,8 @@ tools_board-builds: \
 		board-build-exfatprogs \
 		board-build-mtd_utils \
 		board-build-dropbear \
-		board-build-curl
+		board-build-curl \
+		board-build-txikijs
 	@echo "build tools board done"
 
 tools_board-clean:
@@ -36,6 +37,7 @@ tools_board-clean:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/dosfstools distclean
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/exfatprogs distclean
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/curl distclean
+	$(MAKE) -C $(SYSDRV_DIR)/tools/board/txikijs distclean
 
 board-build-toolkits:
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/toolkits
@@ -118,4 +120,9 @@ board-build-dropbear:
 board-build-curl:
 ifeq ($(ENABLE_CURL),y)
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/curl;
+endif
+
+board-build-txikijs:
+ifeq ($(ENABLE_TXIKIJS),y)
+	$(MAKE) -C $(SYSDRV_DIR)/tools/board/txikijs;
 endif

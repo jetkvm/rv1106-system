@@ -14,9 +14,10 @@ PKG_BIN := out
 
 PKG_DEP_ZLIB := $(CURRENT_DIR)/../toolkits/zlib
 PKG_DEP_OPENSSL := $(CURRENT_DIR)/../toolkits/openssl
+PKG_DEP_LIBUV := $(CURRENT_DIR)/../toolkits/libuv
 SYSDRV_CROSS_CFLAGS += $(SYSDRV_OPTS) -Os
 
-all:
+all: dep-libuv
 	@test -f $(PKG_BIN)/bin/curl || (\
 	rm -rf $(CURRENT_DIR)/$(PKG_NAME); \
 	tar -xf $(PKG_TARBALL); \
@@ -61,6 +62,9 @@ all:
 		rm -rf $(CURRENT_DIR)/$(PKG_BIN)/share; \
 	popd; )
 	$(call MAROC_COPY_PKG_TO_SYSDRV_OUTPUT, $(SYSDRV_DIR_OUT_ROOTFS), $(PKG_BIN))
+
+dep-libuv:
+	$(MAKE) -C $(PKG_DEP_LIBUV)
 
 clean: distclean
 
