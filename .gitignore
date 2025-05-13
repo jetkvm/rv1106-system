@@ -3,3 +3,4 @@ output/*
 !IMAGE/.gitkeep
 !output/.gitkeep
 .BoardConfig.mk
+RK-RELEASE-NOTES-IPC.txt

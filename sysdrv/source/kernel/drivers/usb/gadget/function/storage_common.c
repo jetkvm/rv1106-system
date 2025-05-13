@@ -259,6 +259,10 @@ int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
 	if (fsg_lun_is_open(curlun))
 		fsg_lun_close(curlun);
 
+	/* Too big CD-ROM images will be handled as DVD-ROM */
+	curlun->cd_as_dvd = curlun->cdrom &&
+		(num_sectors >= CD_MAX_MSF_SECTORS);
+
 	curlun->blksize = blksize;
 	curlun->blkbits = blkbits;
 	curlun->ro = ro;

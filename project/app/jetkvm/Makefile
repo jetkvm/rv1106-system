@@ -29,6 +29,7 @@ thirdlibs-build:
 
 jetkvm-build: 
 	mkdir -p $(PKG_BIN)/bin $(PKG_BIN)/share $(PKG_BIN)/install_to_userdata
+	cp $(CURRENT_DIR)/jetkvm-lib.sh $(PKG_BIN)/share/jetkvm-lib.sh
 	cp $(CURRENT_DIR)/RkLunch.sh $(PKG_BIN)/bin/RkLunch.sh
 	cp $(CURRENT_DIR)/RkLunch-stop.sh $(PKG_BIN)/bin/RkLunch-stop.sh
 	cp $(CURRENT_DIR)/dropbear.sh $(PKG_BIN)/bin/dropbear.sh

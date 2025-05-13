@@ -16,6 +16,7 @@ all:
 	@test -f $(PKG_BIN)/usr/sbin/e2fsck || (\
 	rm -rf $(CURRENT_DIR)/$(PKG_NAME); \
 	tar -xf $(PKG_TARBALL); \
+	sed -i.bak -e 's|#define HAVE_SYS_TIME_H|#define HAVE_SYS_STAT_H\n#define HAVE_SYS_TIME_H|g' $(CURRENT_DIR)/$(PACKAGE_NAME)/util/subst.c
 	mkdir -p $(CURRENT_DIR)/$(PKG_NAME)/$(PKG_BIN); \
 	mkdir -p $(CURRENT_DIR)/$(PKG_BIN)/usr/; \
 	pushd $(CURRENT_DIR)/$(PKG_NAME)/; \

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source /oem/usr/share/jetkvm-lib.sh
+
 rcS()
 {
 	for i in /oem/usr/etc/init.d/S??* ;do
@@ -29,24 +31,11 @@ check_linker()
         [ ! -L "$2" ] && ln -sf $1 $2
 }
 
-get_mac_from_i2c() {
-    mac=""
-    for reg in fa fb fc fd fe ff; do
-        value=$(i2cget -y 1 50 0x$reg)
-        value=$(echo "$value" | sed 's/0x//')
-        mac="${mac}${value}"
-    done
-    mac=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
-    mac=$(echo "$mac" | sed 's/.\{2\}/&:/g; s/:$//')
-    echo "$mac"
-}
-
 network_init()
 {
 	ifup lo
-	mac_address=$(get_mac_from_i2c)
 	ifconfig eth0 down
-	ifconfig eth0 hw ether $mac_address
+	set_up_mac_address | tee /dev/kmsg
 
 	# ethaddr1=`ifconfig -a | grep "eth.*HWaddr" | awk '{print $5}'`
 
@@ -61,7 +50,15 @@ network_init()
 	# else
 	# 	echo $ethaddr1 > /data/ethaddr.txt
 	# fi
-	ifconfig eth0 up && udhcpc -i eth0
+  # Check valid hostname and set on dhcp req
+  ifconfig eth0 up && (
+      hostname=$(hostname 2>/dev/null)
+      if echo "$hostname" | grep -Eq '^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'; then
+          udhcpc -i eth0 -x hostname:"$hostname"
+      else
+          udhcpc -i eth0
+      fi
+  )
 }
 
 post_chk()

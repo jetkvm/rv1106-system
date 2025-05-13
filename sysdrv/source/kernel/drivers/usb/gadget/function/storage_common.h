@@ -121,6 +121,18 @@ do {									\
 #define MMC_PROFILE_HDDVD_RW_DL         0x005A
 #define MMC_PROFILE_INVALID             0xFFFF
 
+/*
+ * Maximum number of sectors of a CD using MSF (Minute-Second-Frame) addressing.
+ * The value is derived from the CD standard, where the maximum number of sectors
+ * is calculated as (255 minutes * 59 seconds * 74 frames per second). Each frame
+ * corresponds to one sector. The subtraction of (2 * 75) accounts for the lead-in
+ * and lead-out areas, which are not part of the usable data area.
+ * 
+ * This value is used to distinguish between CDs and DVDs. Images larger than this
+ * value are assumed to be DVDs or oversized CDs, which are handled as DVDs.
+ */
+#define CD_MAX_MSF_SECTORS	((255 * 59 * 74) - (2 * 75))
+
 #define SK(x)		((u8) ((x) >> 16))	/* Sense Key byte, etc. */
 #define ASC(x)		((u8) ((x) >> 8))
 #define ASCQ(x)		((u8) (x))
@@ -140,6 +152,7 @@ struct fsg_lun {
 	unsigned int	ro:1;
 	unsigned int	removable:1;
 	unsigned int	cdrom:1;
+	unsigned int	cd_as_dvd:1; /* Handle big CD as DVD if cdrom == 1 */
 	unsigned int	prevent_medium_removal:1;
 	unsigned int	registered:1;
 	unsigned int	info_valid:1;
