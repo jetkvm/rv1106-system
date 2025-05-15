@@ -21,6 +21,7 @@ tools/board/stressapptest/stressapptest-master
 tools/board/sysstat/sysstat-*/
 tools/board/toolkits/openssl/openssl-*/
 tools/board/toolkits/zlib/zlib-*/
+tools/board/libffi/libffi-*
 tools/board/valgrind/valgrind-*/
 tools/pc/toolkits/resource_tool
 util-linux-*/
