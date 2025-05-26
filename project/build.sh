@@ -1265,7 +1265,7 @@ function __PACKAGE_ROOTFS()
 
 	build_get_sdk_version
 
-	: ${BUILD_VERSION:="0.1.0+$(date "+%Y%m%d%H%M")"}
+	: ${BUILD_VERSION:="$(cat "${SDK_ROOT_DIR}/VERSION")+$(date "+%Y%m%d%H%M")"}
 	echo $BUILD_VERSION > $RK_PROJECT_PACKAGE_ROOTFS_DIR/version
 
 	cat > $RK_PROJECT_PACKAGE_ROOTFS_DIR/bin/sdkinfo <<EOF
