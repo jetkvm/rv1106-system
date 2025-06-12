@@ -28,7 +28,7 @@ kernel_menuconfig() {
     make ARCH=arm savedefconfig
     cp defconfig "${current_dir}/sysdrv/source/kernel/arch/arm/configs/${config_name}"
     make ARCH=arm mrproper
-    popd
+    popd > /dev/null
     set +x
     set +e
 
