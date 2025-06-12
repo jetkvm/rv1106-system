@@ -58,11 +58,7 @@ jobs:
           retention-days: 7
       - name: Create compressed buildkit
         run: |
-          tar  "-I zstd -10 -T0 --long=31" -cf \
-            buildkit.tar.zst \
-            tools/linux/toolchain \
-            media/out/include \
-            media/out/lib
+          ./make_buildkit.sh
       - name: Upload buildkit
         uses: actions/upload-artifact@v4
         with:
