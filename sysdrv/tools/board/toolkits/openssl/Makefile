@@ -13,9 +13,9 @@ ifeq ($(SYSDRV_ARCH_TYPE),arm)
 PKG_USE_THUMB2 ?= YES
 endif
 
-PKG_TARBALL_OPENSSL := openssl-1.1.1h.tar.gz
-PKG_NAME_OPENSSL := openssl-1.1.1h
-PKG_PATCHES_OPENSSL := openssl-1.1.1h-patches
+PKG_TARBALL_OPENSSL := openssl-1.1.1w.tar.gz
+PKG_NAME_OPENSSL := openssl-1.1.1w
+PKG_PATCHES_OPENSSL := openssl-1.1.1w-patches
 ifeq ($(SYSDRV_ARCH_TYPE),arm)
 PKG_OS_COMPILE_FLAG_OPENSSL := linux-armv4
 else
@@ -41,7 +41,7 @@ all: zlib-dep
 	mkdir -p $(CURRENT_DIR)/$(PKG_BIN); \
 	pushd $(CURRENT_DIR)/$(PKG_NAME_OPENSSL)/; \
 		cp -af $(CURRENT_DIR)/$(PKG_PATCHES_OPENSSL)/* ./; \
-		$(SHELL) ./openssl-1.1.1h.patch.sh ; \
+		$(SHELL) ./openssl-1.1.1w.patch.sh ; \
 		CFLAGS="$(PKG_CONF_OPTS)" CPPFLAGS="$(PKG_CONF_OPTS)" \
 		CXXFLAGS="$(PKG_CONF_OPTS)" LDFLAGS="$(PKG_CONF_OPTS)" \
 			./Configure \
