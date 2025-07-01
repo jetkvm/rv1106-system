@@ -6,7 +6,8 @@ if [ -f "/userdata/jetkvm/devmode.enable" ]; then
 	ln -s /userdata/dropbear/etc /etc/dropbear
 	ln -s /userdata/dropbear/.ssh /root/.ssh
 	#TODO: setup syslog instead of -E(log to stderr)
-	dropbear -R -E
+	# enforce SSH key authentication only (disable password-auth and root password login)
+	dropbear -R -E -s -g # security fix by cyclone
 else
 	# Kill Dropbear if it's already running
 	killall dropbear
