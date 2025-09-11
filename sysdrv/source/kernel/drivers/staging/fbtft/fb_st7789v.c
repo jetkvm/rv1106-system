@@ -75,6 +75,7 @@ enum st7789v_command {
 
 static struct completion panel_te; /* completion for panel TE line */
 static int irq_te; /* Linux IRQ for LCD TE line */
+static bool display_initialized = false;
 
 static irqreturn_t panel_te_handler(int irq, void *data)
 {
@@ -205,15 +206,18 @@ static int init_display(struct fbtft_par *par)
 	 */
 	write_reg(par, PWCTRL1, 0xA4, 0xA1);
 
+
 	/* TE line output is off by default when powering on */
 	if (irq_te)
 		write_reg(par, MIPI_DCS_SET_TEAR_ON, 0x00);
 
-	write_reg(par, MIPI_DCS_SET_DISPLAY_ON);
+	//write_reg(par, MIPI_DCS_SET_DISPLAY_ON);
+	//mdelay(1000);
 
 	if (HSD20_IPS)
 		write_reg(par, MIPI_DCS_ENTER_INVERT_MODE);
-
+		
+		
 	return 0;
 }
 
@@ -242,20 +246,27 @@ static int write_vmem(struct fbtft_par *par, size_t offset, size_t len)
 	}
 
 	switch (par->pdata->display.buswidth) {
-	case 8:
-		ret = fbtft_write_vmem16_bus8(par, offset, len);
-		break;
-	case 9:
-		ret = fbtft_write_vmem16_bus9(par, offset, len);
-		break;
-	case 16:
-		ret = fbtft_write_vmem16_bus16(par, offset, len);
-		break;
-	default:
-		dev_err(dev, "Unsupported buswidth %d\n",
-			par->pdata->display.buswidth);
-		ret = 0;
-		break;
+		case 8:
+			ret = fbtft_write_vmem16_bus8(par, offset, len);
+			break;
+		case 9:
+			ret = fbtft_write_vmem16_bus9(par, offset, len);
+			break;
+		case 16:
+			ret = fbtft_write_vmem16_bus16(par, offset, len);
+			break;
+		default:
+			dev_err(dev, "Unsupported buswidth %d\n",
+				par->pdata->display.buswidth);
+			ret = 0;
+			break;
+	}
+
+	
+	if(!display_initialized)
+	{
+		display_initialized = true;
+		write_reg(par, MIPI_DCS_SET_DISPLAY_ON);
 	}
 
 	return ret;
