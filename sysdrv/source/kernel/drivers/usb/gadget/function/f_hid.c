@@ -648,14 +648,14 @@ static int hidg_setup(struct usb_function *f,
 	value	= __le16_to_cpu(ctrl->wValue);
 	length	= __le16_to_cpu(ctrl->wLength);
 
-	VDBG(cdev,
+	DBG(cdev,
 	     "%s crtl_request : bRequestType:0x%x bRequest:0x%x Value:0x%x\n",
 	     __func__, ctrl->bRequestType, ctrl->bRequest, value);
 
 	switch ((ctrl->bRequestType << 8) | ctrl->bRequest) {
 	case ((USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_GET_REPORT):
-		VDBG(cdev, "get_report\n");
+		DBG(cdev, "get_report\n");
 
 		/* send an empty report */
 		length = min_t(unsigned, length, hidg->report_length);
@@ -666,7 +666,7 @@ static int hidg_setup(struct usb_function *f,
 
 	case ((USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_GET_PROTOCOL):
-		VDBG(cdev, "get_protocol\n");
+		DBG(cdev, "get_protocol\n");
 		length = min_t(unsigned int, length, 1);
 		((u8 *) req->buf)[0] = hidg->protocol;
 		goto respond;
@@ -674,7 +674,7 @@ static int hidg_setup(struct usb_function *f,
 
 	case ((USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_GET_IDLE):
-		VDBG(cdev, "get_idle\n");
+		DBG(cdev, "get_idle\n");
 		length = min_t(unsigned int, length, 1);
 		((u8 *) req->buf)[0] = hidg->idle;
 		goto respond;
@@ -682,7 +682,7 @@ static int hidg_setup(struct usb_function *f,
 
 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_SET_REPORT):
-		VDBG(cdev, "set_report | wLength=%d\n", ctrl->wLength);
+		DBG(cdev, "set_report | wLength=%d\n", ctrl->wLength);
 		if (hidg->use_out_ep)
 			goto stall;
 		req->complete = hidg_ssreport_complete;
@@ -692,7 +692,7 @@ static int hidg_setup(struct usb_function *f,
 
 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_SET_PROTOCOL):
-		VDBG(cdev, "set_protocol\n");
+		DBG(cdev, "set_protocol\n");
 		if (value > HID_REPORT_PROTOCOL)
 			goto stall;
 		length = 0;
@@ -709,7 +709,7 @@ static int hidg_setup(struct usb_function *f,
 
 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_SET_IDLE):
-		VDBG(cdev, "set_idle\n");
+		DBG(cdev, "set_idle %d\n", value >> 8);
 		length = 0;
 		hidg->idle = value >> 8;
 		goto respond;
@@ -722,7 +722,7 @@ static int hidg_setup(struct usb_function *f,
 		{
 			struct hid_descriptor hidg_desc_copy = hidg_desc;
 
-			VDBG(cdev, "USB_REQ_GET_DESCRIPTOR: HID\n");
+			DBG(cdev, "USB_REQ_GET_DESCRIPTOR: HID\n");
 			hidg_desc_copy.desc[0].bDescriptorType = HID_DT_REPORT;
 			hidg_desc_copy.desc[0].wDescriptorLength =
 				cpu_to_le16(hidg->report_desc_length);
@@ -734,7 +734,7 @@ static int hidg_setup(struct usb_function *f,
 			break;
 		}
 		case HID_DT_REPORT:
-			VDBG(cdev, "USB_REQ_GET_DESCRIPTOR: REPORT\n");
+			DBG(cdev, "USB_REQ_GET_DESCRIPTOR: REPORT\n");
 			length = min_t(unsigned short, length,
 						   hidg->report_desc_length);
 			memcpy(req->buf, hidg->report_desc, length);
@@ -742,7 +742,7 @@ static int hidg_setup(struct usb_function *f,
 			break;
 
 		default:
-			VDBG(cdev, "Unknown descriptor request 0x%x\n",
+			DBG(cdev, "Unknown descriptor request 0x%x\n",
 				 value >> 8);
 			goto stall;
 			break;
@@ -750,7 +750,7 @@ static int hidg_setup(struct usb_function *f,
 		break;
 
 	default:
-		VDBG(cdev, "Unknown request 0x%x\n",
+		DBG(cdev, "Unknown request 0x%x\n",
 			 ctrl->bRequest);
 		goto stall;
 		break;
@@ -806,7 +806,7 @@ static int hidg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 	unsigned long				flags;
 	int i, status = 0;
 
-	VDBG(cdev, "hidg_set_alt intf:%d alt:%d\n", intf, alt);
+	DBG(cdev, "hidg_set_alt intf:%d alt:%d\n", intf, alt);
 
 	if (hidg->in_ep != NULL) {
 		/* restart endpoint */
