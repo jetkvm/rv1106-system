@@ -10,19 +10,6 @@
 		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyFIQ0 rootwait snd_soc_core.prealloc_buffer_size_kbytes=16 coherent_pool=0";
 	};
 
-	acodec_sound: acodec-sound {
-		compatible = "simple-audio-card";
-		simple-audio-card,name = "rv-acodec";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,cpu {
-			sound-dai = <&i2s0_8ch>;
-		};
-		simple-audio-card,codec {
-			sound-dai = <&acodec>;
-		};
-	};
-
 	vcc_1v8: vcc-1v8 {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_1v8";
@@ -59,12 +46,31 @@
 		clock-frequency = <27000000>;
 		#clock-cells = <0>;
 	};
-};
 
-&acodec {
-	#sound-dai-cells = <0>;
-	pa-ctl-gpios = <&gpio1 RK_PA1 GPIO_ACTIVE_HIGH>;
-	status = "okay";
+	tc358743_codec: tc358743-codec {
+		#sound-dai-cells = <0>;
+		compatible = "linux,spdif-dir";
+		status = "okay";
+	};
+
+	i2s_hdmi_sound: i2s-hdmi-sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "tc358743";
+		simple-audio-card,bitclock-master = <&hdmi_codec_dai>;
+		simple-audio-card,frame-master = <&hdmi_codec_dai>;
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s0_pins_hdmi_rx>;
+
+		simple-audio-card,cpu {
+			sound-dai = <&i2s0_8ch>;
+		};
+
+		hdmi_codec_dai: simple-audio-card,codec {
+			sound-dai = <&tc358743_codec>;
+		};
+	};
 };
 
 &cpu0 {
@@ -90,7 +96,7 @@
 			csi_dphy_input0: endpoint@0 {
 				reg = <0>;
 				remote-endpoint = <&hdmiin_out0>;
-				data-lanes = <1 2>;
+				data-lanes = <1 2 3 4>;
 			};
 
 		};
@@ -202,4 +208,18 @@
 
 &crypto {
     status = "okay";
+};
+
+&pinctrl {
+	i2s0 {
+		i2s0_pins_hdmi_rx: i2s0-pins-hdmi-rx {
+			rockchip,pins =
+				/* i2s0_sclk */
+				<2 RK_PA0 2 &pcfg_pull_none>,
+				/* i2s0_lrck */
+				<2 RK_PA1 2 &pcfg_pull_none>,
+				/* i2s0_sdi0 */
+				<2 RK_PA5 2 &pcfg_pull_none>;
+		};
+	};
 };
