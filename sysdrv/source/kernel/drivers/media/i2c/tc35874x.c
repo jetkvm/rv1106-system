@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * tc35874x - Toshiba HDMI to CSI-2 bridge
  *
@@ -223,6 +224,54 @@ struct tc35874x_state {
 	struct v4l2_ctrl *link_freq;
 	struct v4l2_ctrl *pixel_rate;
 	const struct tc35874x_mode *cur_mode;
+
+	bool sleep_mode_enabled;
+	bool streaming; /* streaming status  */
+	struct mutex sleep_mutex;
+	struct device *sysfs_dev;
+};
+
+static int tc35874x_set_sleep_mode(struct v4l2_subdev *sd, bool enable);
+
+static ssize_t sleep_mode_show(struct device *dev,
+				   struct device_attribute *attr, char *buf)
+{
+	struct tc35874x_state *state = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", state->sleep_mode_enabled ? 1 : 0);
+}
+
+static ssize_t sleep_mode_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct tc35874x_state *state = dev_get_drvdata(dev);
+	struct v4l2_subdev *sd = &state->sd;
+	int value;
+	int ret;
+
+	ret = kstrtoint(buf, 0, &value);
+	if (ret < 0)
+		return ret;
+
+	v4l2_dbg(1, debug, sd, "%s: setting sleep mode to %d\n", __func__, value);
+
+	ret = tc35874x_set_sleep_mode(sd, value != 0);
+	if (ret < 0)
+		return ret;
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(sleep_mode);
+
+static struct attribute *tc35874x_sysfs_attrs[] = {
+	&dev_attr_sleep_mode.attr,
+	NULL
+};
+
+static const struct attribute_group tc35874x_sysfs_attr_group = {
+	.attrs = tc35874x_sysfs_attrs,
 };
 
 static void tc35874x_enable_interrupts(struct v4l2_subdev *sd,
@@ -430,7 +479,7 @@ static inline unsigned fps(const struct v4l2_bt_timings *t)
 }
 
 static int tc35874x_get_detected_timings(struct v4l2_subdev *sd,
-				     struct v4l2_dv_timings *timings)
+					 struct v4l2_dv_timings *timings)
 {
 	struct v4l2_bt_timings *bt = &timings->bt;
 	unsigned width, height, frame_width, frame_height, frame_interval, fps;
@@ -441,10 +490,12 @@ static int tc35874x_get_detected_timings(struct v4l2_subdev *sd,
 
 	if (no_signal(sd)) {
 		v4l2_dbg(1, debug, sd, "%s: no valid signal\n", __func__);
+		tc35874x_set_sleep_mode(sd, true);
 		return -ENOLINK;
 	}
 	if (no_sync(sd)) {
 		v4l2_dbg(1, debug, sd, "%s: no sync on signal\n", __func__);
+		tc35874x_set_sleep_mode(sd, true);
 		return -ENOLCK;
 	}
 
@@ -461,7 +512,8 @@ static int tc35874x_get_detected_timings(struct v4l2_subdev *sd,
 	frame_height = (((i2c_rd8(sd, V_SIZE_HI) & 0x3f) << 8) +
 		i2c_rd8(sd, V_SIZE_LO)) / 2;
 	/* frame interval in milliseconds * 10
-	 * Require SYS_FREQ0 and SYS_FREQ1 are precisely set */
+	 * Require SYS_FREQ0 and SYS_FREQ1 are precisely set
+	 */
 	frame_interval = ((i2c_rd8(sd, FV_CNT_HI) & 0x3) << 8) +
 		i2c_rd8(sd, FV_CNT_LO);
 	fps = (frame_interval > 0) ?
@@ -554,7 +606,8 @@ static void tc35874x_disable_edid(struct v4l2_subdev *sd)
 	cancel_delayed_work_sync(&state->delayed_work_enable_hotplug);
 
 	/* DDC access to EDID is also disabled when hotplug is disabled. See
-	 * register DDC_CTL */
+	 * register DDC_CTL
+	 */
 	i2c_wr8_and_or(sd, HPD_CTL, ~MASK_HPD_OUT0, 0x0);
 }
 
@@ -571,7 +624,8 @@ static void tc35874x_enable_edid(struct v4l2_subdev *sd)
 	v4l2_dbg(2, debug, sd, "%s:\n", __func__);
 
 	/* Enable hotplug after 100 ms. DDC access to EDID is also enabled when
-	 * hotplug is enabled. See register DDC_CTL */
+	 * hotplug is enabled. See register DDC_CTL
+	 */
 	schedule_delayed_work(&state->delayed_work_enable_hotplug, HZ / 10);
 
 	tc35874x_enable_interrupts(sd, true);
@@ -681,24 +735,106 @@ static inline void enable_stream(struct v4l2_subdev *sd, bool enable)
 	if (enable) {
 		/* It is critical for CSI receiver to see lane transition
 		 * LP11->HS. Set to non-continuous mode to enable clock lane
-		 * LP11 state. */
+		 * LP11 state.
+		 */
 		i2c_wr32(sd, TXOPTIONCNTRL, 0);
 		/* Set to continuous mode to trigger LP11->HS transition */
 		i2c_wr32(sd, TXOPTIONCNTRL, MASK_CONTCLKMODE);
 		/* Unmute video */
 		i2c_wr8(sd, VI_MUTE, MASK_AUTO_MUTE);
+		state->streaming = true;
 	} else {
 		/* Mute video so that all data lanes go to LSP11 state.
-		 * No data is output to CSI Tx block. */
+		 * No data is output to CSI Tx block.
+		 */
 		i2c_wr8(sd, VI_MUTE, MASK_AUTO_MUTE | MASK_VI_MUTE);
 		/* Set to non-continuous mode to enable clock lane LP11 state. */
 		i2c_wr32(sd, TXOPTIONCNTRL, 0);
+		state->streaming = false;
 	}
 
 	mutex_lock(&state->confctl_mutex);
 	i2c_wr16_and_or(sd, CONFCTL, ~(MASK_VBUFEN | MASK_ABUFEN),
 			enable ? (MASK_VBUFEN | MASK_ABUFEN) : 0x0);
 	mutex_unlock(&state->confctl_mutex);
+}
+
+
+static int tc35874x_set_sleep_mode(struct v4l2_subdev *sd, bool enable)
+{
+	struct tc35874x_state *state = to_state(sd);
+	int ret = 0;
+
+	mutex_lock(&state->sleep_mutex);
+
+	if (state->sleep_mode_enabled == enable) {
+		mutex_unlock(&state->sleep_mutex);
+		return 0;
+	}
+
+	v4l2_dbg(1, debug, sd, "%s: %s\n", __func__,
+			 enable ? "enabling" : "disabling");
+
+	if (enable) {
+		/* stop streaming before entering sleep mode */
+		if (state->streaming)
+			enable_stream(sd, false);
+
+		v4l2_dbg(1, debug, sd, "Entering sleep mode\n");
+
+		/* configure as sleep mode (not deep sleep) */
+		mutex_lock(&state->confctl_mutex);
+		i2c_wr16_and_or(sd, CONFCTL, (u16)~MASK_PWRISO, 0x0000); // PWRISO=0
+		mutex_unlock(&state->confctl_mutex);
+
+		/* use existing sleep mode function */
+		tc35874x_sleep_mode(sd, true);
+
+		/* disable all interrupts, including HDMI detection interrupts */
+		i2c_wr8(sd, SYS_INTM, 0xFF); // mask all system interrupts
+		i2c_wr8(sd, CLK_INTM, 0xFF);
+		i2c_wr8(sd, CBIT_INTM, 0xFF);
+		i2c_wr8(sd, AUDIO_INTM, 0xFF);
+		i2c_wr8(sd, MISC_INTM, 0xFF);
+		i2c_wr8(sd, PACKET_INTM, 0xFF);
+		i2c_wr8(sd, ERR_INTM, 0xFF);
+		i2c_wr8(sd, HDCP_INTM, 0xFF);
+		i2c_wr8(sd, KEY_INTM, 0xFF);
+
+		/* clear all pending interrupts */
+		i2c_wr8(sd, SYS_INT, 0xFF);
+		i2c_wr8(sd, CLK_INT, 0xFF);
+		i2c_wr8(sd, CBIT_INT, 0xFF);
+		i2c_wr8(sd, AUDIO_INT, 0xFF);
+		i2c_wr8(sd, MISC_INT, 0xFF);
+
+		/* disable global interrupts */
+		i2c_wr16(sd, INTMASK, 0xFFFF);
+
+		state->sleep_mode_enabled = true;
+
+	} else {
+		/* exit sleep mode */
+		v4l2_dbg(1, debug, sd, "Exiting sleep mode\n");
+
+		tc35874x_sleep_mode(sd, false);
+
+		/* wait for PLL lock */
+		msleep(20);
+
+		/* re-enable interrupts */
+		tc35874x_enable_interrupts(sd, tx_5v_power_present(sd));
+		i2c_wr16(sd, INTMASK, ~(MASK_HDMI_MSK | MASK_CSI_MSK) & 0xffff);
+
+		/* restart streaming if it was previously enabled */
+		if (state->streaming)
+			enable_stream(sd, true);
+
+		state->sleep_mode_enabled = false;
+	}
+
+	mutex_unlock(&state->sleep_mutex);
+	return ret;
 }
 
 static void tc35874x_set_pll(struct v4l2_subdev *sd)
@@ -745,7 +881,8 @@ static void tc35874x_set_pll(struct v4l2_subdev *sd)
 		state->timings.bt.interlaced, fps(&(state->timings.bt)));
 
 	/* Only rewrite when needed (new value or disabled), since rewriting
-	 * triggers another format change event. */
+	 * triggers another format change event.
+	 */
 	if (pllctl0 != pllctl0_new || (pllctl1 & MASK_PLL_EN) == 0 ||
 		SET_PLL_FRS(pll_frs) != (pllctl1 & MASK_PLL_FRS)) {
 
@@ -930,7 +1067,8 @@ static void tc35874x_set_hdmi_phy(struct v4l2_subdev *sd)
 	struct tc35874x_platform_data *pdata = &state->pdata;
 
 	/* Default settings from REF_02, sheet "Source HDMI"
-	 * and custom settings as platform data */
+	 * and custom settings as platform data
+	 */
 	i2c_wr8_and_or(sd, PHY_EN, ~MASK_ENABLE_PHY, 0x0);
 	i2c_wr8(sd, PHY_CTL1, SET_PHY_AUTO_RST1_US(1600) |
 			SET_FREQ_RANGE_MODE_CYCLES(1));
@@ -1000,7 +1138,7 @@ static void tc35874x_initial_setup(struct v4l2_subdev *sd)
 	struct tc35874x_platform_data *pdata = &state->pdata;
 
 	/* CEC and IR are not supported by this driver */
-	i2c_wr16_and_or(sd, SYSCTL, ~(MASK_CECRST | MASK_IRRST | MASK_I2SDIS),
+	i2c_wr16_and_or(sd, SYSCTL, ~(MASK_CECRST | MASK_IRRST),
 			(MASK_CECRST | MASK_IRRST));
 
 	tc35874x_reset(sd, MASK_CTXRST | MASK_HDMIRST);
@@ -1128,7 +1266,8 @@ static void tc35874x_hdmi_misc_int_handler(struct v4l2_subdev *sd,
 	if (misc_int & MASK_I_SYNC_CHG) {
 		/* Reset the HDMI PHY to try to trigger proper lock on the
 		 * incoming video format. Erase BKSV to prevent that old keys
-		 * are used when a new source is connected. */
+		 * are used when a new source is connected.
+		 */
 		if (no_sync(sd) || no_signal(sd)) {
 			tc35874x_reset_phy(sd);
 			tc35874x_erase_bksv(sd);
@@ -1205,7 +1344,8 @@ static void tc35874x_hdmi_clk_int_handler(struct v4l2_subdev *sd, bool *handled)
 		 * I_SYNC_CHG interrupt is not always triggered, while the
 		 * I_IN_DE_CHG interrupt seems to work fine. Format change
 		 * notifications are only sent when the signal is stable to
-		 * reduce the number of notifications. */
+		 * reduce the number of notifications.
+		 */
 		if (!no_signal(sd) && !no_sync(sd))
 			tc35874x_format_change(sd);
 
@@ -1257,7 +1397,8 @@ static void tc35874x_hdmi_sys_int_handler(struct v4l2_subdev *sd, bool *handled)
 
 		/* Reset the HDMI PHY to try to trigger proper lock on the
 		 * incoming video format. Erase BKSV to prevent that old keys
-		 * are used when a new source is connected. */
+		 * are used when a new source is connected.
+		 */
 		if (no_sync(sd) || no_signal(sd)) {
 			tc35874x_reset_phy(sd);
 			tc35874x_erase_bksv(sd);
@@ -1432,7 +1573,7 @@ static int tc35874x_get_reg_size(u16 address)
 }
 
 static int tc35874x_g_register(struct v4l2_subdev *sd,
-			       struct v4l2_dbg_register *reg)
+				   struct v4l2_dbg_register *reg)
 {
 	if (reg->reg > 0xffff) {
 		tc35874x_print_register_map(sd);
@@ -1447,7 +1588,7 @@ static int tc35874x_g_register(struct v4l2_subdev *sd,
 }
 
 static int tc35874x_s_register(struct v4l2_subdev *sd,
-			       const struct v4l2_dbg_register *reg)
+				   const struct v4l2_dbg_register *reg)
 {
 	if (reg->reg > 0xffff) {
 		tc35874x_print_register_map(sd);
@@ -1461,10 +1602,10 @@ static int tc35874x_s_register(struct v4l2_subdev *sd,
 	 * resolved.
 	 */
 	if (reg->reg == HDCP_MODE ||
-	    reg->reg == HDCP_REG1 ||
-	    reg->reg == HDCP_REG2 ||
-	    reg->reg == HDCP_REG3 ||
-	    reg->reg == BCAPS)
+		reg->reg == HDCP_REG1 ||
+		reg->reg == HDCP_REG2 ||
+		reg->reg == HDCP_REG3 ||
+		reg->reg == BCAPS)
 		return 0;
 
 	i2c_wrreg(sd, (u16)reg->reg, reg->val,
@@ -1553,7 +1694,7 @@ static void tc35874x_work_i2c_poll(struct work_struct *work)
 }
 
 static int tc35874x_subscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
-				    struct v4l2_event_subscription *sub)
+					struct v4l2_event_subscription *sub)
 {
 	switch (sub->type) {
 	case V4L2_EVENT_SOURCE_CHANGE:
@@ -1621,7 +1762,7 @@ static int tc35874x_g_dv_timings(struct v4l2_subdev *sd,
 }
 
 static int tc35874x_enum_dv_timings(struct v4l2_subdev *sd,
-				    struct v4l2_enum_dv_timings *timings)
+					struct v4l2_enum_dv_timings *timings)
 {
 	if (timings->pad != 0)
 		return -EINVAL;
@@ -1713,11 +1854,6 @@ static int tc35874x_enum_mbus_code(struct v4l2_subdev *sd,
 	case 0:
 		code->code = MEDIA_BUS_FMT_UYVY8_2X8;
 		break;
-	/*
-	case 1:
-		code->code = MEDIA_BUS_FMT_RGB888_1X24;
-		break;
-	*/
 	default:
 		return -EINVAL;
 	}
@@ -1798,7 +1934,7 @@ static int tc35874x_get_reso_dist(const struct tc35874x_mode *mode,
 				 struct v4l2_mbus_framefmt *framefmt)
 {
 	return abs(mode->width - framefmt->width) +
-	       abs(mode->height - framefmt->height);
+		   abs(mode->height - framefmt->height);
 }
 
 static const struct tc35874x_mode *
@@ -1943,7 +2079,7 @@ static int tc35874x_s_edid(struct v4l2_subdev *sd,
 }
 
 static int tc35874x_g_frame_interval(struct v4l2_subdev *sd,
-				    struct v4l2_subdev_frame_interval *fi)
+					struct v4l2_subdev_frame_interval *fi)
 {
 	struct tc35874x_state *state = to_state(sd);
 	const struct tc35874x_mode *mode = state->cur_mode;
@@ -2164,8 +2300,8 @@ static int tc35874x_probe_of(struct tc35874x_state *state)
 	}
 
 	if (endpoint.bus_type != V4L2_MBUS_CSI2_DPHY ||
-	    endpoint.bus.mipi_csi2.num_data_lanes == 0 ||
-	    endpoint.nr_of_link_frequencies == 0) {
+		endpoint.bus.mipi_csi2.num_data_lanes == 0 ||
+		endpoint.nr_of_link_frequencies == 0) {
 		dev_err(dev, "missing CSI-2 properties in endpoint\n");
 		goto free_endpoint;
 	}
@@ -2212,7 +2348,7 @@ static int tc35874x_probe_of(struct tc35874x_state *state)
 
 	/* The CSI speed per lane is refclk / pll_prd * pll_fbd */
 	state->pdata.pll_fbd = bps_pr_lane /
-			       state->pdata.refclk_hz * state->pdata.pll_prd;
+				   state->pdata.refclk_hz * state->pdata.pll_prd;
 
 	/*
 	 * FIXME: These timings are from REF_02 for 594 Mbps per lane (297 MHz
@@ -2234,7 +2370,7 @@ static int tc35874x_probe_of(struct tc35874x_state *state)
 	state->pdata.hstxvregcnt = 0;
 
 	state->reset_gpio = devm_gpiod_get_optional(dev, "reset",
-						    GPIOD_OUT_LOW);
+							GPIOD_OUT_LOW);
 	if (IS_ERR(state->reset_gpio)) {
 		dev_err(dev, "failed to get reset gpio\n");
 		ret = PTR_ERR(state->reset_gpio);
@@ -2294,15 +2430,19 @@ static int tc35874x_probe(struct i2c_client *client,
 	err = of_property_read_u32(node, RKMODULE_CAMERA_MODULE_INDEX,
 				   &state->module_index);
 	err |= of_property_read_string(node, RKMODULE_CAMERA_MODULE_FACING,
-				       &state->module_facing);
+					   &state->module_facing);
 	err |= of_property_read_string(node, RKMODULE_CAMERA_MODULE_NAME,
-				       &state->module_name);
+					   &state->module_name);
 	err |= of_property_read_string(node, RKMODULE_CAMERA_LENS_NAME,
-				       &state->len_name);
+					   &state->len_name);
 	if (err) {
 		dev_err(dev, "could not get module information!\n");
 		return -EINVAL;
 	}
+
+	mutex_init(&state->sleep_mutex);
+	state->sleep_mode_enabled = false;
+	state->streaming = false;
 
 	state->i2c_client = client;
 	state->cur_mode = &supported_modes[0];
@@ -2400,6 +2540,14 @@ static int tc35874x_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&state->delayed_work_enable_hotplug,
 			tc35874x_delayed_work_enable_hotplug);
 
+	state->sysfs_dev = &client->dev;
+	err = sysfs_create_group(&state->sysfs_dev->kobj, &tc35874x_sysfs_attr_group);
+	if (err) {
+		v4l2_err(sd, "failed to create sysfs attributes\n");
+		goto err_hdl;
+	}
+	dev_set_drvdata(state->sysfs_dev, state);
+
 	tc35874x_initial_setup(sd);
 
 	tc35874x_s_dv_timings(sd, &default_timing);
@@ -2428,7 +2576,7 @@ static int tc35874x_probe(struct i2c_client *client,
 			  tc35874x_work_i2c_poll);
 		timer_setup(&state->timer, tc35874x_irq_poll_timer, 0);
 		state->timer.expires = jiffies +
-				       msecs_to_jiffies(POLL_INTERVAL_MS);
+					   msecs_to_jiffies(POLL_INTERVAL_MS);
 		add_timer(&state->timer);
 	}
 
@@ -2445,6 +2593,7 @@ static int tc35874x_probe(struct i2c_client *client,
 	return 0;
 
 err_work_queues:
+	sysfs_remove_group(&state->sysfs_dev->kobj, &tc35874x_sysfs_attr_group);
 	if (!state->i2c_client->irq)
 		flush_work(&state->work_i2c_poll);
 	cancel_delayed_work(&state->delayed_work_enable_hotplug);
@@ -2460,6 +2609,8 @@ static int tc35874x_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct tc35874x_state *state = to_state(sd);
 
+	sysfs_remove_group(&state->sysfs_dev->kobj, &tc35874x_sysfs_attr_group);
+
 	if (!state->i2c_client->irq) {
 		del_timer_sync(&state->timer);
 		flush_work(&state->work_i2c_poll);
@@ -2468,6 +2619,7 @@ static int tc35874x_remove(struct i2c_client *client)
 	v4l2_async_unregister_subdev(sd);
 	v4l2_device_unregister_subdev(sd);
 	mutex_destroy(&state->confctl_mutex);
+	mutex_destroy(&state->sleep_mutex);
 	media_entity_cleanup(&sd->entity);
 	v4l2_ctrl_handler_free(&state->hdl);
 
