@@ -29,7 +29,7 @@ NFT_CROSS_CFLAGS += -I$(DEPS_OUTPUT_DIR)/include/libnftl
 NFT_CROSS_LDFLAGS := $(SYSDRV_CROSS_CFLAGS)
 NFT_CROSS_LDFLAGS += -Wl,-rpath-link=$(DEPS_OUTPUT_DIR)/lib
 
-LIBMNL_CFLAGS := -I$(DEPS_OUTPUT_DIR)/include/libmnl
+LIBMNL_CFLAGS := -I$(DEPS_OUTPUT_DIR)/include
 LIBMNL_LIBS := -L$(DEPS_OUTPUT_DIR)/lib -lmnl -Wl,-rpath-link=$(DEPS_OUTPUT_DIR)/lib
 
 LIBNFTNL_CFLAGS := -I$(DEPS_OUTPUT_DIR)/include/libnftnl
@@ -63,9 +63,10 @@ libnftnl: libmnl
 	tar -xf $(LIBNFTNL_TARBALL); \
 	mkdir -p $(DEPS_OUTPUT_DIR); \
 	pushd $(CURRENT_DIR)/$(LIBNFTNL_NAME); \
-		echo "CFLAGS=$(SYSDRV_CROSS_CFLAGS)"; \
+		echo "CFLAGS=$(SYSDRV_CROSS_CFLAGS) LIBMNL_CFLAGS=$(LIBMNL_CFLAGS) LIBMNL_LIBS=$(LIBMNL_LIBS)"; \
 		./configure --host=$(SYSDRV_CROSS) --target=$(SYSDRV_CROSS) CFLAGS="$(SYSDRV_CROSS_CFLAGS)" \
-			LDFLAGS="$(SYSDRV_CROSS_CFLAGS)" --prefix=$(DEPS_OUTPUT_DIR) > /dev/null; \
+			LDFLAGS="$(SYSDRV_CROSS_CFLAGS)" LIBMNL_CFLAGS="$(LIBMNL_CFLAGS)" LIBMNL_LIBS="$(LIBMNL_LIBS)" \
+			--prefix=$(DEPS_OUTPUT_DIR) > /dev/null; \
 		make -j$(SYSDRV_JOBS) || (exit -1 && echo "Error building libnftnl"); \
 		make install; \
 		echo "Finished building libnftnl"; \
