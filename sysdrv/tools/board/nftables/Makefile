@@ -8,8 +8,8 @@ export LC_ALL=C
 SHELL:=/bin/bash
 
 CURRENT_DIR := $(shell pwd)
-PKG_TARBALL := nftables-1.1.1.tar.xz
-PKG_NAME := nftables-1.1.1
+PKG_TARBALL := nftables-1.1.5.tar.xz
+PKG_NAME := nftables-1.1.5
 PKG_BIN := out
 
 DEPS_OUTPUT_DIR := $(CURRENT_DIR)/out
@@ -17,8 +17,8 @@ DEPS_OUTPUT_DIR := $(CURRENT_DIR)/out
 LIBMNL_TARBALL := libmnl-1.0.5.tar.bz2
 LIBMNL_NAME := libmnl-1.0.5
 
-LIBNFTNL_TARBALL := libnftnl-1.2.8.tar.xz
-LIBNFTNL_NAME := libnftnl-1.2.8
+LIBNFTNL_TARBALL := libnftnl-1.3.0.tar.xz
+LIBNFTNL_NAME := libnftnl-1.3.0
 
 NFT_CROSS_CFLAGS := $(SYSDRV_CROSS_CFLAGS)
 NFT_CROSS_CFLAGS += -I$(DEPS_OUTPUT_DIR)/include
