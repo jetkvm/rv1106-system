@@ -490,12 +490,10 @@ static int tc35874x_get_detected_timings(struct v4l2_subdev *sd,
 
 	if (no_signal(sd)) {
 		v4l2_dbg(1, debug, sd, "%s: no valid signal\n", __func__);
-		tc35874x_set_sleep_mode(sd, true);
 		return -ENOLINK;
 	}
 	if (no_sync(sd)) {
 		v4l2_dbg(1, debug, sd, "%s: no sync on signal\n", __func__);
-		tc35874x_set_sleep_mode(sd, true);
 		return -ENOLCK;
 	}
 
