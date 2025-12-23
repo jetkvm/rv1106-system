@@ -44,12 +44,13 @@ static int uvc_queue_setup(struct vb2_queue *vq,
 {
 	struct uvc_video_queue *queue = vb2_get_drv_priv(vq);
 	struct uvc_video *video = container_of(queue, struct uvc_video, queue);
-#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
-	struct uvc_device *uvc = container_of(video, struct uvc_device, video);
-	struct f_uvc_opts *opts = fi_to_f_uvc_opts(uvc->func.fi);
-#endif
 	unsigned int req_size;
 	unsigned int nreq;
+#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
+	struct uvc_device *uvc = container_of(video, struct uvc_device, video);
+	struct f_uvc_opts *opts = uvc->func.fi ?
+		fi_to_f_uvc_opts(uvc->func.fi) : NULL;
+#endif
 
 	if (*nbuffers > UVC_MAX_VIDEO_BUFFERS)
 		*nbuffers = UVC_MAX_VIDEO_BUFFERS;
@@ -131,9 +132,13 @@ static void *uvc_buffer_mem_prepare(struct vb2_buffer *vb,
 {
 	struct uvc_video *video = container_of(queue, struct uvc_video, queue);
 	struct uvc_device *uvc = container_of(video, struct uvc_device, video);
-	struct f_uvc_opts *opts = fi_to_f_uvc_opts(uvc->func.fi);
+	struct f_uvc_opts *opts;
 	void *mem;
 
+	if (!uvc->func.fi)
+		return (vb2_plane_vaddr(vb, 0) + vb2_plane_data_offset(vb, 0));
+
+	opts = fi_to_f_uvc_opts(uvc->func.fi);
 	if (!opts->uvc_zero_copy || video->fcc == V4L2_PIX_FMT_YUYV)
 		return (vb2_plane_vaddr(vb, 0) + vb2_plane_data_offset(vb, 0));
 

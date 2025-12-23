@@ -25,8 +25,12 @@
 static bool uvc_using_zero_copy(struct uvc_video *video)
 {
 	struct uvc_device *uvc = container_of(video, struct uvc_device, video);
-	struct f_uvc_opts *opts = fi_to_f_uvc_opts(uvc->func.fi);
+	struct f_uvc_opts *opts;
 
+	if (!uvc->func.fi)
+		return false;
+
+	opts = fi_to_f_uvc_opts(uvc->func.fi);
 	if (opts && opts->uvc_zero_copy && video->fcc != V4L2_PIX_FMT_YUYV)
 		return true;
 	else
@@ -399,15 +403,14 @@ static void uvcg_video_pump(struct work_struct *work)
 	return;
 }
 
-/*
- * Enable or disable the video stream.
- */
+/* Enable or disable the video stream. */
 int uvcg_video_enable(struct uvc_video *video, int enable)
 {
 	unsigned int i;
 	int ret;
 	struct uvc_device *uvc;
 	struct f_uvc_opts *opts;
+	int pm_qos_latency;
 
 	if (video->ep == NULL) {
 		uvcg_info(&video->uvc->func,
@@ -416,7 +419,15 @@ int uvcg_video_enable(struct uvc_video *video, int enable)
 	}
 
 	uvc = container_of(video, struct uvc_device, video);
-	opts = fi_to_f_uvc_opts(uvc->func.fi);
+
+	/* fi may be NULL during disconnect */
+	if (uvc->func.fi) {
+		opts = fi_to_f_uvc_opts(uvc->func.fi);
+		pm_qos_latency = opts->pm_qos_latency;
+	} else {
+		opts = NULL;
+		pm_qos_latency = PM_QOS_DEFAULT_VALUE;
+	}
 
 	if (!enable) {
 		cancel_work_sync(&video->pump);
@@ -433,7 +444,7 @@ int uvcg_video_enable(struct uvc_video *video, int enable)
 		return 0;
 	}
 
-	cpu_latency_qos_add_request(&uvc->pm_qos, opts->pm_qos_latency);
+	cpu_latency_qos_add_request(&uvc->pm_qos, pm_qos_latency);
 	if ((ret = uvcg_queue_enable(&video->queue, 1)) < 0)
 		return ret;
 

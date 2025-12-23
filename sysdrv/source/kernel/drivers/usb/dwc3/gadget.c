@@ -805,9 +805,10 @@ static int __dwc3_gadget_resize_tx_fifos(struct dwc3_ep *dep)
 		else
 			mult = dep->endpoint.mult;
 
-		mult = mult > 0 ? mult * 2 : 3;
-		if (mult > 6)
-			mult = 6;
+		/* Smaller multiplier to leave FIFO space for HID endpoints */
+		mult = mult > 0 ? mult : 3;
+		if (mult > 3)
+			mult = 3;
 	} else if (usb_endpoint_xfer_bulk(dep->endpoint.desc)) {
 		/*
 		 * Set enough tx fifos for Bulk endpoints to get

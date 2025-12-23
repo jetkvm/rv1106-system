@@ -200,29 +200,16 @@ uvc_v4l2_streamon(struct file *file, void *fh, enum v4l2_buf_type type)
 	if (type != video->queue.queue.type)
 		return -EINVAL;
 
-	if (uvc->state != UVC_STATE_CONNECTED)
+	/* Allow STREAMON unless disconnected */
+	if (uvc->state == UVC_STATE_DISCONNECTED)
 		return -ENODEV;
 
-	/* Enable UVC video. */
 	ret = uvcg_video_enable(video, 1);
 	if (ret < 0)
 		return ret;
 
-	/*
-	 * Alt settings in an interface are supported only
-	 * for ISOC endpoints as there are different alt-
-	 * settings for zero-bandwidth and full-bandwidth
-	 * cases, but the same is not true for BULK endpoints,
-	 * as they have a single alt-setting.
-	 *
-	 * For ISOC endpoints, Complete the alternate setting
-	 * selection setup phase now that userspace is ready
-	 * to provide video frames.
-	 */
-	if (!usb_endpoint_xfer_bulk(video->ep->desc))
-		uvc_function_setup_continue(uvc);
-
-	uvc->state = UVC_STATE_STREAMING;
+	if (uvc->state != UVC_STATE_STREAMING)
+		uvc->state = UVC_STATE_STREAMING;
 
 	return 0;
 }

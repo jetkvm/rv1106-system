@@ -206,6 +206,11 @@
 	status = "okay";
 };
 
+/* Required for UAC1 + UVC gadget coexistence */
+&usbdrd_dwc3 {
+	tx-fifo-resize;
+};
+
 &crypto {
     status = "okay";
 };
