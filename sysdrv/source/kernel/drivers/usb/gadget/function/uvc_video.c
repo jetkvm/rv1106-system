@@ -293,6 +293,9 @@ uvc_video_alloc_requests(struct uvc_video *video)
 
 	BUG_ON(video->req_size);
 
+	if (!video->ep->desc)
+		return -ENODEV;
+
 	if (!usb_endpoint_xfer_bulk(video->ep->desc)) {
 		req_size = video->ep->maxpacket
 			 * max_t(unsigned int, video->ep->maxburst, 1)
