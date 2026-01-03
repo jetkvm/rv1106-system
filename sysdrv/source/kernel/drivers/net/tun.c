@@ -860,11 +860,17 @@ out:
 static struct tun_struct *tun_get(struct tun_file *tfile)
 {
 	struct tun_struct *tun;
+	struct net_device *dev;
 
 	rcu_read_lock();
 	tun = rcu_dereference(tfile->tun);
-	if (tun)
-		dev_hold(tun->dev);
+	if (tun) {
+		dev = READ_ONCE(tun->dev);
+		if (dev && dev->reg_state == NETREG_REGISTERED)
+			dev_hold(dev);
+		else
+			tun = NULL;
+	}
 	rcu_read_unlock();
 
 	return tun;
