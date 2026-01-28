@@ -49,6 +49,7 @@ test: flash
 # -----------------------------------------------------------------------------
 # Dev Release - Prerelease for testing
 # -----------------------------------------------------------------------------
+dev_release: export BUILD_VERSION := $(VERSION_DEV)
 dev_release: git_check_dev test
 	@if rclone lsf $(R2_PATH)/$(VERSION_DEV)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION_DEV) already exists in R2"; exit 1; \
@@ -75,6 +76,7 @@ dev_release: git_check_dev test
 # -----------------------------------------------------------------------------
 # Production Release
 # -----------------------------------------------------------------------------
+release: export BUILD_VERSION := $(VERSION)
 release: git_check_dev test
 	@if rclone lsf $(R2_PATH)/$(VERSION)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION) already exists in R2"; exit 1; \

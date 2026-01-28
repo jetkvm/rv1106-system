@@ -7,6 +7,12 @@ ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
 
 source "${SCRIPT_DIR}/common.sh"
 
+if [ -z "${BUILD_VERSION:-}" ]; then
+    base_version=$(cat "${ROOT_DIR}/VERSION" 2>/dev/null || echo "0.0.0")
+    export BUILD_VERSION="${base_version}-dev$(date -u +%Y%m%d%H%M)"
+    export BUILD_VERSION_SOURCE="local-dev"
+fi
+
 msg_info ">> Building rv1106-system..."
 cd "$ROOT_DIR"
 
