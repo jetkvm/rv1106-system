@@ -67,8 +67,8 @@ dev_release: git_check_dev test
 	@echo "═══════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Proceed? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	./scripts/release_github.sh --version $(VERSION_DEV) --prerelease
 	./scripts/release_r2.sh --version $(VERSION_DEV)
+	./scripts/release_github.sh --version $(VERSION_DEV) --prerelease
 	@echo ""
 	@echo "OK: Dev release complete: release/v$(VERSION_DEV)"
 
@@ -103,8 +103,8 @@ release: git_check_dev test
 	@echo "═══════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Proceed with PRODUCTION release? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	./scripts/release_github.sh --version $(VERSION)
 	./scripts/release_r2.sh --version $(VERSION)
+	./scripts/release_github.sh --version $(VERSION)
 	@echo ""
 	@echo "OK: Production release complete: release/v$(VERSION)"
 	@echo ""
