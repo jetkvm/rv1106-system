@@ -37,7 +37,7 @@ git_check_dev:
 # -----------------------------------------------------------------------------
 # Build / Flash / Test (dependency chain)
 # -----------------------------------------------------------------------------
-build:
+build: clean
 	./scripts/build_system.sh
 
 flash: build
@@ -49,18 +49,18 @@ test: flash
 # -----------------------------------------------------------------------------
 # Dev Release - Prerelease for testing
 # -----------------------------------------------------------------------------
-dev_release: test
+dev_release: git_check_dev test
 	@if rclone lsf $(R2_PATH)/$(VERSION_DEV)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION_DEV) already exists in R2"; exit 1; \
 	fi
-	@if gh release view "$(VERSION_DEV)" --repo jetkvm/rv1106-system >/dev/null 2>&1; then \
-		echo "Error: GitHub release $(VERSION_DEV) already exists"; exit 1; \
+	@if gh release view "release/v$(VERSION_DEV)" --repo jetkvm/rv1106-system >/dev/null 2>&1; then \
+		echo "Error: GitHub release release/v$(VERSION_DEV) already exists"; exit 1; \
 	fi
 	@echo "═══════════════════════════════════════════════════════"
 	@echo "  DEV Release (Pre-release)"
 	@echo "═══════════════════════════════════════════════════════"
 	@echo "  Version: $(VERSION_DEV)"
-	@echo "  Tag:     release/$(VERSION_DEV)"
+	@echo "  Tag:     release/v$(VERSION_DEV)"
 	@echo "  Branch:  $$(git rev-parse --abbrev-ref HEAD)"
 	@echo "  Commit:  $$(git rev-parse --short HEAD)"
 	@echo "  Time:    $$(date -u +%FT%T%z)"
@@ -68,9 +68,9 @@ dev_release: test
 	@echo ""
 	@read -p "Proceed? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
 	./scripts/release_github.sh --version $(VERSION_DEV) --prerelease
-	./scripts/build_test_release.sh --version $(VERSION_DEV)
+	./scripts/release_r2.sh --version $(VERSION_DEV)
 	@echo ""
-	@echo "OK: Dev release complete: v$(VERSION_DEV)"
+	@echo "OK: Dev release complete: release/v$(VERSION_DEV)"
 
 # -----------------------------------------------------------------------------
 # Production Release
@@ -79,10 +79,10 @@ release: git_check_dev test
 	@if rclone lsf $(R2_PATH)/$(VERSION)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION) already exists in R2"; exit 1; \
 	fi
-	@if gh release view "v$(VERSION)" --repo jetkvm/rv1106-system >/dev/null 2>&1; then \
-		echo "Error: GitHub release v$(VERSION) already exists"; exit 1; \
+	@if gh release view "release/v$(VERSION)" --repo jetkvm/rv1106-system >/dev/null 2>&1; then \
+		echo "Error: GitHub release release/v$(VERSION) already exists"; exit 1; \
 	fi
-	@latest_dev=$$(gh release list --repo jetkvm/rv1106-system --limit 10 --json tagName --jq '.[].tagName' | grep "^v$(VERSION)-dev" | head -1); \
+	@latest_dev=$$(gh release list --repo jetkvm/rv1106-system --limit 10 --json tagName --jq '.[].tagName' | grep "^release/v$(VERSION)-dev" | head -1); \
 		if [ -z "$$latest_dev" ]; then \
 			echo ""; \
 			echo "WARNING: No dev release found for $(VERSION)"; \
@@ -96,7 +96,7 @@ release: git_check_dev test
 	@echo "  PRODUCTION Release"
 	@echo "═══════════════════════════════════════════════════════"
 	@echo "  Version: $(VERSION)"
-	@echo "  Tag:     v$(VERSION)"
+	@echo "  Tag:     release/v$(VERSION)"
 	@echo "  Branch:  $$(git rev-parse --abbrev-ref HEAD)"
 	@echo "  Commit:  $$(git rev-parse --short HEAD)"
 	@echo "  Time:    $$(date -u +%FT%T%z)"
@@ -106,7 +106,7 @@ release: git_check_dev test
 	./scripts/release_github.sh --version $(VERSION)
 	./scripts/release_r2.sh --version $(VERSION)
 	@echo ""
-	@echo "OK: Production release complete: v$(VERSION)"
+	@echo "OK: Production release complete: release/v$(VERSION)"
 	@echo ""
 	@echo "Next: Run 'make bump-version' to prepare for next release cycle"
 
@@ -133,6 +133,7 @@ bump-version:
 # -----------------------------------------------------------------------------
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -rf output/
+	sudo rm -rf output/
+	./build.sh clean
 	rm -f buildkit.tar.zst
 	@echo "OK: Clean complete"

@@ -4,12 +4,7 @@ permissions:
 
 on:
   push:
-    branches:
-      - dev
-      - 'feat/**'
-      - 'chore/**'
-    tags:
-      - 'v*'
+  pull_request:
 
 jobs:
   build:
@@ -30,14 +25,8 @@ jobs:
         run: |
           export BUILD_VERSION=$(cat VERSION)
           export BUILD_VERSION_SOURCE="file"
-          # check if current branch is main, if not then append branch name and commit 
-          # check if current tag starts with v, if yes, override BUILD_VERSION with the tag
-          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" =~ ^v.* ]]; then
-            export BUILD_VERSION=$(echo $GITHUB_REF | sed 's/refs\/tags\///' | sed 's/^v//')
-            export BUILD_VERSION_SOURCE="release-tag"
-          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            export BUILD_VERSION="$BUILD_VERSION"
-          elif [ "$GITHUB_REF" != "refs/heads/main" ]; then
+          # For non-main branches, append branch name and timestamp
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
             export BUILD_VERSION="$BUILD_VERSION-$(echo $GITHUB_REF | sed 's/refs\/heads\///' | sed 's/\//-/')$(date +%Y%m%d%H%M)"
             export BUILD_VERSION_SOURCE="branch"
           fi
@@ -74,26 +63,3 @@ jobs:
           path: buildkit.tar.zst
           retention-days: 7
           compression-level: 0
-
-  release:
-    # no need to use buildjet runners, as we only need to create a release
-    runs-on: ubuntu-latest
-    name: Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-      - name: Draft release
-        uses: softprops/action-gh-release@v2
-        with:
-          # need review before making a real release
-          draft: true
-          files: |
-            ./OTA Image/update_ota.tar
-            ./Full Image/update.img
-            ./jetkvm-native-buildkit/buildkit.tar.zst
-          fail_on_unmatched_files: true
-          tag_name: ${{ github.ref }}
-          name: ${{ github.ref }}
-          generate_release_notes: true

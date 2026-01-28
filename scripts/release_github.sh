@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -o pipefail
 
 SCRIPT_DIR=$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")
 ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
@@ -68,13 +69,13 @@ for file in "$ota_tar" "$full_img" "$buildkit"; do
     fi
 done
 
-if gh release view "${BUILD_VERSION}" --repo jetkvm/rv1106-system >/dev/null 2>&1; then
-    msg_err "Error: GitHub release ${BUILD_VERSION} already exists"
+if gh release view "release/v${BUILD_VERSION}" --repo jetkvm/rv1106-system >/dev/null 2>&1; then
+    msg_err "Error: GitHub release release/v${BUILD_VERSION} already exists"
     exit 1
 fi
 
-if git rev-parse "release/${BUILD_VERSION}" >/dev/null 2>&1; then
-    msg_err "Error: Git tag release/${BUILD_VERSION} already exists"
+if git rev-parse "release/v${BUILD_VERSION}" >/dev/null 2>&1; then
+    msg_err "Error: Git tag release/v${BUILD_VERSION} already exists"
     exit 1
 fi
 
@@ -84,10 +85,10 @@ kit_size=$(du -h "$buildkit" | cut -f1)
 
 echo ""
 msg_info "═══════════════════════════════════════════════════════"
-msg_info "  GitHub Release (DRAFT)"
+msg_info "  GitHub Release"
 msg_info "═══════════════════════════════════════════════════════"
 msg_info "  Version: ${BUILD_VERSION}"
-msg_info "  Tag:     release/${BUILD_VERSION}"
+msg_info "  Tag:     release/v${BUILD_VERSION}"
 msg_info "  Branch:  $(git rev-parse --abbrev-ref HEAD)"
 msg_info "  Commit:  $(git rev-parse --short HEAD)"
 msg_info "═══════════════════════════════════════════════════════"
@@ -103,15 +104,15 @@ if [ "$confirm" != "y" ]; then
     exit 1
 fi
 
-msg_info ">> Creating git tag v${BUILD_VERSION}..."
-git tag "release/${BUILD_VERSION}"
-git push origin "release/${BUILD_VERSION}"
+msg_info ">> Creating git tag release/v${BUILD_VERSION}..."
+git tag "release/v${BUILD_VERSION}"
+git push origin "release/v${BUILD_VERSION}"
 
 msg_info ">> Creating GitHub release..."
-release_args=( "release/${BUILD_VERSION}" "$ota_tar" "$full_img" "${buildkit}#${buildkit_name}" "--title" "${BUILD_VERSION}" "--generate-notes" "--draft" )
+release_args=( "release/v${BUILD_VERSION}" "$ota_tar" "$full_img" "${buildkit}#${buildkit_name}" "--title" "${BUILD_VERSION}" "--generate-notes" )
 if [ "$PRERELEASE" = true ]; then
     release_args+=( "--prerelease" )
 fi
 gh release create "${release_args[@]}"
 
-msg_ok "OK: GitHub draft release created: v${BUILD_VERSION}"
+msg_ok "OK: GitHub release created: release/v${BUILD_VERSION}"
