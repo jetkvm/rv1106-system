@@ -52,7 +52,7 @@ if [ ! -f "$ota_tar" ]; then
 fi
 
 msg_info ">> Flashing system image to device..."
-msg_info "  Transferring update_ota.tar..."
+msg_info "  Transferring update_ota.tar to /userdata/jetkvm/update_system.tar......"
 sshdev "cat > /userdata/jetkvm/update_system.tar" < "$ota_tar"
 msg_ok "  OK: Transfer complete"
 
