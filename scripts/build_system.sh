@@ -25,17 +25,17 @@ msg_info "  Running build.sh lunch..."
 msg_info "  Running build.sh..."
 ./build.sh
 
-if [ ! -f "output/image/update_ota.tar" ]; then
-    msg_err "Error: output/image/update_ota.tar not found after build"
+if [ ! -f "$OTA_TAR" ]; then
+    msg_err "Error: $OTA_TAR not found after build"
     exit 1
 fi
-if [ ! -f "output/image/update.img" ]; then
-    msg_err "Error: output/image/update.img not found after build"
+if [ ! -f "$FULL_IMG" ]; then
+    msg_err "Error: $FULL_IMG not found after build"
     exit 1
 fi
 
 msg_info "  Computing SHA256 checksums..."
-sha256sum output/image/update_ota.tar | awk '{print $1}' > output/image/update_ota.tar.sha256
-sha256sum output/image/update.img | awk '{print $1}' > output/image/update.img.sha256
+sha256sum "$OTA_TAR" | awk '{print $1}' > "${OTA_TAR}.sha256"
+sha256sum "$FULL_IMG" | awk '{print $1}' > "${FULL_IMG}.sha256"
 
 msg_ok "OK: Build completed"

@@ -131,3 +131,12 @@ wait_for_device() {
 
     msg_ok "OK: Device is online and ready"
 }
+
+# -----------------------------------------------------------------------------
+# Build artifact paths
+# -----------------------------------------------------------------------------
+OUTPUT_IMAGE_DIR="${ROOT_DIR:-$(pwd)}/output/image"
+OTA_TAR_NAME="update_ota.tar"
+FULL_IMG_NAME="update.img"
+OTA_TAR="${OUTPUT_IMAGE_DIR}/${OTA_TAR_NAME}"
+FULL_IMG="${OUTPUT_IMAGE_DIR}/${FULL_IMG_NAME}"

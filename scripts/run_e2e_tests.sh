@@ -4,10 +4,10 @@ set -o pipefail
 
 SCRIPT_DIR=$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")
 
-DEVICE_IP="192.168.1.77"
-DEVICE_USER="root"
-KVM_REPO="https://github.com/jetkvm/kvm.git"
-KVM_BRANCH="dev"
+DEVICE_IP="${DEVICE_IP:-192.168.1.77}"
+DEVICE_USER="${DEVICE_USER:-root}"
+KVM_REPO="${KVM_REPO:-https://github.com/jetkvm/kvm.git}"
+KVM_BRANCH="${KVM_BRANCH:-dev}"
 KVM_DIR=""
 TEMP_DIR=""
 

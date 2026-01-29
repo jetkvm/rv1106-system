@@ -52,8 +52,8 @@ gh auth status >/dev/null 2>&1 || { msg_err "Error: gh CLI not authenticated. Ru
 
 cd "$ROOT_DIR"
 
-ota_tar="output/image/update_ota.tar"
-full_img="output/image/update.img"
+ota_tar="$OTA_TAR"
+full_img="$FULL_IMG"
 buildkit="buildkit.tar.zst"
 buildkit_name="kvm-native-buildkit.tar.zst"
 

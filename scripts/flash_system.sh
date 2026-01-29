@@ -5,8 +5,8 @@ set -o pipefail
 SCRIPT_DIR=$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")
 ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
 
-DEVICE_IP="192.168.1.77"
-DEVICE_USER="root"
+DEVICE_IP="${DEVICE_IP:-192.168.1.77}"
+DEVICE_USER="${DEVICE_USER:-root}"
 
 source "${SCRIPT_DIR}/common.sh"
 
@@ -45,7 +45,7 @@ done
 check_ping "${DEVICE_IP}"
 check_ssh "${DEVICE_USER}" "${DEVICE_IP}"
 
-ota_tar="${ROOT_DIR}/output/image/update_ota.tar"
+ota_tar="$OTA_TAR"
 if [ ! -f "$ota_tar" ]; then
     msg_err "Error: ${ota_tar} not found. Run 'make build' first."
     exit 1

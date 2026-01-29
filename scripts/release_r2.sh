@@ -6,7 +6,7 @@ SCRIPT_DIR=$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")
 ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
 
 BUILD_VERSION=""
-R2_PATH="r2://jetkvm-update/system"
+R2_PATH="${R2_PATH:-r2://jetkvm-update/system}"
 
 source "${SCRIPT_DIR}/common.sh"
 
@@ -46,10 +46,10 @@ command -v rclone >/dev/null 2>&1 || { msg_err "Error: rclone not installed"; ex
 
 cd "$ROOT_DIR"
 
-ota_tar="output/image/update_ota.tar"
-ota_sha="output/image/update_ota.tar.sha256"
-full_img="output/image/update.img"
-img_sha="output/image/update.img.sha256"
+ota_tar="$OTA_TAR"
+ota_sha="${OTA_TAR}.sha256"
+full_img="$FULL_IMG"
+img_sha="${FULL_IMG}.sha256"
 
 for file in "$ota_tar" "$full_img"; do
     if [ ! -f "$file" ]; then
