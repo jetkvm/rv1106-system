@@ -54,6 +54,8 @@ struct f_hidg {
 	 *              will be used to receive reports.
 	 */
 	bool				use_out_ep;
+	/* attempt to wake the host when writing a report */
+	bool				wakeup_on_write;
 
 	/* recv report */
 	spinlock_t			read_spinlock;
@@ -430,9 +432,20 @@ static ssize_t f_hidg_write(struct file *file, const char __user *buffer,
 			    size_t count, loff_t *offp)
 {
 	struct f_hidg *hidg  = file->private_data;
+	struct usb_composite_dev *cdev = hidg->func.config->cdev;
 	struct usb_request *req;
 	unsigned long flags;
 	ssize_t status = -ENOMEM;
+
+	/*
+	 * Try to wake the host if it suspended the bus.  The wakeup request
+	 * is only honoured when the host has negotiated remote-wakeup during
+	 * enumeration (indicated by the bmAttributes remote-wakeup bit in the
+	 * configuration descriptor).  If the UDC or the host does not support
+	 * wakeup the call simply returns an error we can safely ignore.
+	 */
+	if (hidg->wakeup_on_write && cdev && cdev->gadget)
+		usb_gadget_wakeup(cdev->gadget);
 
 	spin_lock_irqsave(&hidg->write_spinlock, flags);
 
@@ -1097,6 +1110,7 @@ CONFIGFS_ATTR(f_hid_opts_, name)
 F_HID_OPT(subclass, 8, 255);
 F_HID_OPT(protocol, 8, 255);
 F_HID_OPT(no_out_endpoint, 8, 1);
+F_HID_OPT(wakeup_on_write, 8, 1);
 F_HID_OPT(report_length, 16, 65535);
 
 static ssize_t f_hid_opts_report_desc_show(struct config_item *item, char *page)
@@ -1157,6 +1171,7 @@ static struct configfs_attribute *hid_attrs[] = {
 	&f_hid_opts_attr_subclass,
 	&f_hid_opts_attr_protocol,
 	&f_hid_opts_attr_no_out_endpoint,
+	&f_hid_opts_attr_wakeup_on_write,
 	&f_hid_opts_attr_report_length,
 	&f_hid_opts_attr_report_desc,
 	&f_hid_opts_attr_dev,
@@ -1297,6 +1312,7 @@ static struct usb_function *hidg_alloc(struct usb_function_instance *fi)
 		}
 	}
 	hidg->use_out_ep = !opts->no_out_endpoint;
+	hidg->wakeup_on_write = opts->wakeup_on_write;
 
 	mutex_unlock(&opts->lock);
 
