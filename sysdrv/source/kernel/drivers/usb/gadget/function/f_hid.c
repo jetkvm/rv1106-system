@@ -432,7 +432,6 @@ static ssize_t f_hidg_write(struct file *file, const char __user *buffer,
 			    size_t count, loff_t *offp)
 {
 	struct f_hidg *hidg  = file->private_data;
-	struct usb_composite_dev *cdev = hidg->func.config->cdev;
 	struct usb_request *req;
 	unsigned long flags;
 	ssize_t status = -ENOMEM;
@@ -444,8 +443,11 @@ static ssize_t f_hidg_write(struct file *file, const char __user *buffer,
 	 * configuration descriptor).  If the UDC or the host does not support
 	 * wakeup the call simply returns an error we can safely ignore.
 	 */
-	if (hidg->wakeup_on_write && cdev && cdev->gadget)
-		usb_gadget_wakeup(cdev->gadget);
+	if (hidg->wakeup_on_write && hidg->func.config) {
+		struct usb_composite_dev *cdev = hidg->func.config->cdev;
+		if (cdev && cdev->gadget)
+			usb_gadget_wakeup(cdev->gadget);
+	}
 
 	spin_lock_irqsave(&hidg->write_spinlock, flags);
 
