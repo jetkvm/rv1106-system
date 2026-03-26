@@ -129,6 +129,7 @@
 		reset-gpios = <&gpio2 RK_PA3 GPIO_ACTIVE_LOW>;
 		touchscreen-size-x = <240>;
 		touchscreen-size-y = <300>;
+		threshold = <40>;
 		touch_type = <1>;
  	};
 };
