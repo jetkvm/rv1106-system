@@ -8,6 +8,8 @@ DEVICE_IP="${DEVICE_IP:-192.168.1.77}"
 DEVICE_USER="${DEVICE_USER:-root}"
 KVM_REPO="${KVM_REPO:-https://github.com/jetkvm/kvm.git}"
 KVM_BRANCH="${KVM_BRANCH:-dev}"
+JETKVM_REMOTE_HOST="${JETKVM_REMOTE_HOST:-}"
+
 KVM_DIR=""
 TEMP_DIR=""
 
@@ -21,6 +23,7 @@ show_help() {
     echo "  -u, --user <user>     Remote username (default: ${DEVICE_USER})"
     echo "      --kvm-dir <path>  Path to existing kvm repo (skips clone)"
     echo "      --kvm-branch <b>  KVM branch to clone (default: ${KVM_BRANCH})"
+    echo "      --remote-host <h> Remote host for remote-agent tests (required)"
     echo "  --help               Show this help message"
     echo
 }
@@ -55,6 +58,10 @@ while [[ $# -gt 0 ]]; do
             KVM_BRANCH="$2"
             shift 2
             ;;
+        --remote-host)
+            JETKVM_REMOTE_HOST="$2"
+            shift 2
+            ;;
         --help)
             show_help
             exit 0
@@ -67,8 +74,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-check_ping "${DEVICE_IP}"
-check_ssh "${DEVICE_USER}" "${DEVICE_IP}"
+if [ -z "$JETKVM_REMOTE_HOST" ]; then
+    msg_err "Error: JETKVM_REMOTE_HOST is required (set via --remote-host or env var)"
+    show_help
+    exit 1
+fi
 
 if [ -z "$KVM_DIR" ]; then
     TEMP_DIR=$(mktemp -d)
@@ -82,6 +92,6 @@ fi
 
 cd "$KVM_DIR"
 msg_info ">> Running E2E tests (this deploys the app)..."
-make frontend
-make test_e2e DEVICE_IP="$DEVICE_IP"
+
+make test_e2e DEVICE_IP="$DEVICE_IP" JETKVM_REMOTE_HOST="$JETKVM_REMOTE_HOST"
 msg_ok "OK: E2E tests passed"

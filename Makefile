@@ -14,7 +14,7 @@ VERSION_DEV := $(VERSION)-dev$(shell date -u +%Y%m%d%H%M)
 DEVICE_IP ?= 192.168.1.77
 R2_PATH := r2://jetkvm-update/system
 
-.PHONY: build flash test dev_release release bump-version git_check_dev clean
+.PHONY: build flash test dev_release release bump-version git_check_dev clean check_device check_remote
 
 # -----------------------------------------------------------------------------
 # Git checks
@@ -40,11 +40,28 @@ git_check_dev:
 build: clean
 	./scripts/build_system.sh
 
-flash: build
+check_device:
+	@echo "Checking device connectivity ($(DEVICE_IP))..."
+	@ping -c 1 -W 5 $(DEVICE_IP) > /dev/null 2>&1 || { echo "Error: Cannot reach device at $(DEVICE_IP)"; exit 1; }
+	@ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@$(DEVICE_IP) "echo ok" > /dev/null 2>&1 || { echo "Error: SSH failed to root@$(DEVICE_IP)"; exit 1; }
+	@echo "OK: Device reachable"
+
+check_remote:
+	@echo "Checking remote host connectivity ($(JETKVM_REMOTE_HOST))..."
+	@ping -c 1 -W 5 $(JETKVM_REMOTE_HOST) > /dev/null 2>&1 || { echo "Error: Cannot reach remote host at $(JETKVM_REMOTE_HOST)"; exit 1; }
+	@ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@$(JETKVM_REMOTE_HOST) "echo ok" > /dev/null 2>&1 || { echo "Error: SSH failed to root@$(JETKVM_REMOTE_HOST)"; exit 1; }
+	@echo "OK: Remote host reachable"
+
+flash:
+	$(MAKE) check_device
+	$(MAKE) build
 	./scripts/flash_system.sh -r $(DEVICE_IP)
 
-test: flash
-	./scripts/run_e2e_tests.sh -r $(DEVICE_IP)
+test:
+	$(MAKE) check_device
+	$(MAKE) check_remote
+	$(MAKE) flash
+	./scripts/run_e2e_tests.sh -r $(DEVICE_IP) --remote-host $(JETKVM_REMOTE_HOST)
 
 # -----------------------------------------------------------------------------
 # Dev Release - Prerelease for testing
