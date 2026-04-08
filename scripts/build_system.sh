@@ -4,6 +4,7 @@ set -o pipefail
 
 SCRIPT_DIR=$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")
 ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
+BUILD_BOARD_CONFIG="${BUILD_BOARD_CONFIG:-BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk}"
 
 source "${SCRIPT_DIR}/common.sh"
 
@@ -15,12 +16,14 @@ fi
 
 msg_info ">> Building rv1106-system..."
 cd "$ROOT_DIR"
+msg_info "  Build version: ${BUILD_VERSION}"
+print_release_source
 
 msg_info "  Updating JetKVM app binary..."
 ./update_app.sh
 
-msg_info "  Running build.sh lunch..."
-./build.sh lunch BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
+msg_info "  Running build.sh lunch for ${BUILD_BOARD_CONFIG}..."
+./build.sh lunch "${BUILD_BOARD_CONFIG}"
 
 msg_info "  Running build.sh..."
 ./build.sh

@@ -7,12 +7,25 @@
 #   dev_release  - Dev release (prerelease) with testing
 #   release      - Production release with testing
 #   bump-version - Bump version for next release cycle
+#
+# Optional ref-based workflows (commit, tag, or branch):
+#   RELEASE_REF=<git-ref>   make test / dev_release / release from that ref (uses temporary worktrees)
+#   ALLOW_DIRTY=1           skip the clean-worktree guard for ref-based helpers
 
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
 VERSION_DEV := $(VERSION)-dev$(shell date -u +%Y%m%d%H%M)
+RELEASE_REF ?=
+BUILD_VERSION ?=
+ALLOW_DIRTY ?=
+BUILD_BOARD_CONFIG ?= BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
 
 DEVICE_IP ?= 192.168.1.77
 R2_PATH := r2://jetkvm-update/system
+
+# Environment forwarded to scripts/release_from_ref.sh and scripts/test_from_ref.sh
+REF_WORKFLOW_ENVS := DEVICE_IP="$(DEVICE_IP)" DEVICE_USER="$(DEVICE_USER)" JETKVM_REMOTE_HOST="$(JETKVM_REMOTE_HOST)" KVM_DIR="$(KVM_DIR)" KVM_BRANCH="$(KVM_BRANCH)" KVM_REPO="$(KVM_REPO)" SKIP_BUILD="$(SKIP_BUILD)" ALLOW_DIRTY="$(ALLOW_DIRTY)" BUILD_BOARD_CONFIG="$(BUILD_BOARD_CONFIG)"
+RELEASE_FROM_REF_ENVS := $(REF_WORKFLOW_ENVS) R2_PATH="$(R2_PATH)"
+TEST_FROM_REF_ENVS := $(REF_WORKFLOW_ENVS) BUILD_VERSION="$(BUILD_VERSION)"
 
 .PHONY: build flash test dev_release release bump-version git_check_dev clean check_device check_remote
 
@@ -59,6 +72,7 @@ ifndef SKIP_BUILD
 endif
 	./scripts/flash_system.sh -r $(DEVICE_IP)
 
+ifeq ($(strip $(RELEASE_REF)),)
 test:
 	$(MAKE) check_device
 	$(MAKE) check_remote
@@ -68,12 +82,17 @@ else
 	$(MAKE) flash SKIP_BUILD=1
 endif
 	./scripts/run_e2e_tests.sh -r $(DEVICE_IP) --remote-host $(JETKVM_REMOTE_HOST) $(if $(KVM_DIR),--kvm-dir $(KVM_DIR))
+else
+test:
+	@$(TEST_FROM_REF_ENVS) ./scripts/test_from_ref.sh --ref "$(RELEASE_REF)"
+endif
 
 # -----------------------------------------------------------------------------
 # Dev Release - Prerelease for testing
 # -----------------------------------------------------------------------------
-dev_release: export BUILD_VERSION := $(VERSION_DEV)
-dev_release: git_check_dev test
+ifeq ($(strip $(RELEASE_REF)),)
+dev_release: git_check_dev
+	@$(MAKE) BUILD_VERSION="$(VERSION_DEV)" test
 	@if rclone lsf $(R2_PATH)/$(VERSION_DEV)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION_DEV) already exists in R2"; exit 1; \
 	fi
@@ -91,23 +110,28 @@ dev_release: git_check_dev test
 	@echo "═══════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Proceed? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	./scripts/release_r2.sh --version $(VERSION_DEV)
-	./scripts/release_github.sh --version $(VERSION_DEV) --prerelease
+	RELEASE_SOURCE_REF="$$(git rev-parse --abbrev-ref HEAD)" RELEASE_SOURCE_COMMIT="$$(git rev-parse HEAD)" ./scripts/release_r2.sh --version $(VERSION_DEV)
+	RELEASE_SOURCE_REF="$$(git rev-parse --abbrev-ref HEAD)" RELEASE_SOURCE_COMMIT="$$(git rev-parse HEAD)" ./scripts/release_github.sh --version $(VERSION_DEV) --prerelease
 	@echo ""
 	@echo "OK: Dev release complete: release/v$(VERSION_DEV)"
+else
+dev_release:
+	@$(RELEASE_FROM_REF_ENVS) ./scripts/release_from_ref.sh --kind dev --ref "$(RELEASE_REF)"
+endif
 
 # -----------------------------------------------------------------------------
 # Production Release
 # -----------------------------------------------------------------------------
-release: export BUILD_VERSION := $(VERSION)
-release: git_check_dev test
+ifeq ($(strip $(RELEASE_REF)),)
+release: git_check_dev
+	@$(MAKE) BUILD_VERSION="$(VERSION)" test
 	@if rclone lsf $(R2_PATH)/$(VERSION)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION) already exists in R2"; exit 1; \
 	fi
 	@if gh release view "release/v$(VERSION)" --repo jetkvm/rv1106-system >/dev/null 2>&1; then \
 		echo "Error: GitHub release release/v$(VERSION) already exists"; exit 1; \
 	fi
-	@latest_dev=$$(gh release list --repo jetkvm/rv1106-system --limit 10 --json tagName --jq '.[].tagName' | grep "^release/v$(VERSION)-dev" | head -1); \
+	@latest_dev=$$(gh release list --repo jetkvm/rv1106-system --limit 10 --json tagName --jq -r '.[].tagName' | grep "^release/v$(VERSION)-dev" | head -1); \
 		if [ -z "$$latest_dev" ]; then \
 			echo ""; \
 			echo "WARNING: No dev release found for $(VERSION)"; \
@@ -128,12 +152,16 @@ release: git_check_dev test
 	@echo "═══════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Proceed with PRODUCTION release? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	./scripts/release_r2.sh --version $(VERSION)
-	./scripts/release_github.sh --version $(VERSION)
+	RELEASE_SOURCE_REF="$$(git rev-parse --abbrev-ref HEAD)" RELEASE_SOURCE_COMMIT="$$(git rev-parse HEAD)" ./scripts/release_r2.sh --version $(VERSION)
+	RELEASE_SOURCE_REF="$$(git rev-parse --abbrev-ref HEAD)" RELEASE_SOURCE_COMMIT="$$(git rev-parse HEAD)" ./scripts/release_github.sh --version $(VERSION)
 	@echo ""
 	@echo "OK: Production release complete: release/v$(VERSION)"
 	@echo ""
 	@echo "Next: Run 'make bump-version' to prepare for next release cycle"
+else
+release:
+	@$(RELEASE_FROM_REF_ENVS) ./scripts/release_from_ref.sh --kind prod --ref "$(RELEASE_REF)"
+endif
 
 # -----------------------------------------------------------------------------
 # Bump Version
@@ -159,6 +187,7 @@ bump-version:
 clean:
 	@echo "Cleaning build artifacts..."
 	sudo rm -rf output/
+	./build.sh lunch "$(BUILD_BOARD_CONFIG)"
 	./build.sh clean
 	rm -f buildkit.tar.zst
 	@echo "OK: Clean complete"

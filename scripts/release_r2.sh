@@ -78,6 +78,7 @@ msg_info "═══════════════════════�
 msg_info "  R2 Upload"
 msg_info "═══════════════════════════════════════════════════════"
 msg_info "  Destination: ${R2_PATH}/${BUILD_VERSION}/"
+print_release_source
 msg_info "═══════════════════════════════════════════════════════"
 msg_info "  Files to upload:"
 msg_info "    - update_ota.tar     → system.tar"

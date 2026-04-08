@@ -7,16 +7,20 @@ ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
 
 BUILD_VERSION=""
 PRERELEASE=false
+TARGET_COMMIT=""
+SOURCE_REF=""
 
 source "${SCRIPT_DIR}/common.sh"
 
 show_help() {
-    echo "Usage: $0 --version <version> [--prerelease]"
+    echo "Usage: $0 --version <version> [--prerelease] [--target-commit <sha>] [--source-ref <ref>]"
     echo
     echo "Options:"
-    echo "  --version <version>   Release version (e.g., 0.2.7)"
-    echo "  --prerelease          Mark release as prerelease"
-    echo "  --help                Show this help message"
+    echo "  --version <version>       Release version (e.g., 0.2.7)"
+    echo "  --prerelease              Mark release as prerelease"
+    echo "  --target-commit <sha>     Commit to tag/release (defaults to HEAD)"
+    echo "  --source-ref <ref>        Source ref label shown in confirmation output"
+    echo "  --help                    Show this help message"
     echo
 }
 
@@ -29,6 +33,14 @@ while [[ $# -gt 0 ]]; do
         --prerelease)
             PRERELEASE=true
             shift
+            ;;
+        --target-commit)
+            TARGET_COMMIT="$2"
+            shift 2
+            ;;
+        --source-ref)
+            SOURCE_REF="$2"
+            shift 2
             ;;
         --help)
             show_help
@@ -51,6 +63,16 @@ command -v gh >/dev/null 2>&1 || { msg_err "Error: gh CLI not installed"; exit 1
 gh auth status >/dev/null 2>&1 || { msg_err "Error: gh CLI not authenticated. Run 'gh auth login'"; exit 1; }
 
 cd "$ROOT_DIR"
+
+if [ -n "$SOURCE_REF" ]; then
+    export RELEASE_SOURCE_REF="$SOURCE_REF"
+fi
+
+if [ -z "$TARGET_COMMIT" ]; then
+    TARGET_COMMIT=$(git rev-parse HEAD)
+fi
+TARGET_COMMIT=$(git rev-parse --verify "${TARGET_COMMIT}^{commit}")
+export RELEASE_SOURCE_COMMIT="$TARGET_COMMIT"
 
 ota_tar="$OTA_TAR"
 full_img="$FULL_IMG"
@@ -90,7 +112,7 @@ msg_info "═══════════════════════�
 msg_info "  Version: ${BUILD_VERSION}"
 msg_info "  Tag:     release/v${BUILD_VERSION}"
 msg_info "  Branch:  $(git rev-parse --abbrev-ref HEAD)"
-msg_info "  Commit:  $(git rev-parse --short HEAD)"
+print_release_source
 msg_info "═══════════════════════════════════════════════════════"
 msg_info "  Files to upload:"
 msg_info "    - update_ota.tar    (${ota_size})"
@@ -105,7 +127,7 @@ if [ "$confirm" != "y" ]; then
 fi
 
 msg_info ">> Creating git tag release/v${BUILD_VERSION}..."
-git tag "release/v${BUILD_VERSION}"
+git tag "release/v${BUILD_VERSION}" "${TARGET_COMMIT}"
 git push origin "release/v${BUILD_VERSION}"
 
 msg_info ">> Creating GitHub release..."
