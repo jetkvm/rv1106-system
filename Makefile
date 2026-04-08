@@ -138,8 +138,7 @@ dev_release: git_check_dev test
 # Production Release
 # -----------------------------------------------------------------------------
 release: export BUILD_VERSION := $(VERSION)
-release: git_check_dev test
-	$(MAKE) check_signing_key SIGNING_KEY_FPR=$(SIGNING_KEY_FPR)
+release: check_signing_key git_check_dev test
 	@if rclone lsf $(R2_PATH)/$(VERSION)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION) already exists in R2"; exit 1; \
 	fi
