@@ -980,10 +980,24 @@ function build_sd_dd_image(){
 	# is a no-op on SDMMC (size '-' → part_size=0), so we run it here.
 	__RELEASE_FILESYSTEM_FILES $RK_PROJECT_PACKAGE_USERDATA_DIR
 	rm -f $userdata_img
+	# Tuned for first-boot resize2fs to a 32 GiB–2 TiB SD card:
+	#   -b 4096       4K blocks → 4× fewer block groups vs mkfs default (1K for a
+	#                 256 MiB FS), so resize2fs metadata work scales sanely.
+	#   -T largefile  inode_ratio=1 MiB → far fewer inodes per group, so the
+	#                 lazy-itable kthread doesn't saturate SD I/O after mount
+	#                 (a 1 TiB FS gets ~1M inodes instead of ~64M).
+	#   -O 64bit      enables meta_bg-style growth past the resize_inode cap
+	#                 (default reserve only covers ~64 GiB on a 256 MiB seed).
+	#   -E resize=    explicit resize_inode reservation for up to 2 TiB.
+	# huge_file stays on (default) — 1 TiB userdata may legitimately hold >2 GiB
+	# files (recordings, captures).
 	MKE2FS_CONFIG=$mkfs_dir/mke2fs.conf $mkfs_bin \
 		-d $RK_PROJECT_PACKAGE_USERDATA_DIR \
-		-L userdata -r 1 -N 0 -m 5 \
-		-O ^64bit,^huge_file \
+		-L userdata -m 1 \
+		-b 4096 \
+		-T largefile \
+		-O 64bit \
+		-E resize=$((2 * 1024 * 1024 * 1024 / 4)) \
 		$userdata_img $((userdata_size_bytes / 1024 / 1024))M
 
 	# Parse GLOBAL_PARTITIONS. Each entry is "SIZE@OFFSET(name)" with SIZE/OFFSET
