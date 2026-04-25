@@ -13,7 +13,7 @@ export RK_TOOLCHAIN_CROSS=arm-rockchip830-linux-uclibcgnueabihf
 export RK_BOOT_MEDIUM=sdmmc
 
 # SKU identifier reported to OTA service
-export RK_SKU=jetkvm-sdmmc
+export RK_SKU=jetkvm-v2-sdmmc
 
 # Uboot defconfig
 export RK_UBOOT_DEFCONFIG=rv1106-jetkvm-v2_defconfig
