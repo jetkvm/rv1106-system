@@ -945,6 +945,132 @@ function build_updateimg(){
 	finish_build
 }
 
+# Build a flat, dd-able SD-card image for sdmmc boards.
+# Layout follows the cmdline blkdevparts (kernel uses these directly — no
+# MBR/GPT involved). The userdata partition is sized '-' (rest-of-disk); we
+# ship a 1 GiB initial ext4 containing install_to_userdata content (jetkvm
+# binary etc.) at userdata's start offset, and rely on mount_part's first-boot
+# resize2fs to grow it to the end of the SD card.
+function build_sd_dd_image(){
+	[ "$RK_BOOT_MEDIUM" = "sdmmc" ] || return 0
+
+	local image_dir=$RK_PROJECT_OUTPUT_IMAGE
+	local out=$image_dir/update_sd.img
+	local out_zip=$image_dir/update_sd.img.zip
+	local userdata_img=$image_dir/userdata.img
+	local userdata_size_bytes=$((256 * 1024 * 1024))    # 256 MiB initial userdata
+	                                                    # first-boot resize2fs grows to card end
+
+	if [ -z "$GLOBAL_PARTITIONS" ]; then
+		msg_error "GLOBAL_PARTITIONS empty — parse_partition_env must run first"
+		exit 1
+	fi
+
+	# Build a 1 GiB ext4 userdata.img seeded from $RK_PROJECT_PACKAGE_USERDATA_DIR.
+	# Bypass build_mkimg because get_partition_size returns 0 for '-(userdata)'.
+	# No resize2fs -M: the ext4 superblock advertises 1 GiB, and first boot
+	# expands it to the end of the partition (= end of the card).
+	local mkfs_dir=$SDK_ROOT_DIR/sysdrv/tools/pc/e2fsprogs
+	local mkfs_bin=$mkfs_dir/mkfs.ext4
+	[ -x "$mkfs_dir/bin/mkfs.ext4" ] && mkfs_bin=$mkfs_dir/bin/mkfs.ext4
+
+	mkdir -p $RK_PROJECT_PACKAGE_USERDATA_DIR
+	rm -f $userdata_img
+	MKE2FS_CONFIG=$mkfs_dir/mke2fs.conf $mkfs_bin \
+		-d $RK_PROJECT_PACKAGE_USERDATA_DIR \
+		-L userdata -r 1 -N 0 -m 5 \
+		-O ^64bit,^huge_file \
+		$userdata_img $((userdata_size_bytes / 1024 / 1024))M
+
+	# Parse GLOBAL_PARTITIONS. Each entry is "SIZE@OFFSET(name)" with SIZE/OFFSET
+	# in hex bytes (or "-" for the growup tail).
+	local userdata_offset_sec=0
+	local -a parts=()
+	local IFS_save=$IFS
+	IFS=,
+	for part in $GLOBAL_PARTITIONS; do
+		local pname psize poff
+		pname=${part#*\(}; pname=${pname%\)}
+		psize=${part%@*}
+		poff=${part#*@}; poff=${poff%%\(*}
+		IFS=$IFS_save
+
+		# Locate the matching .img file. Prefer ${name}.img; fall back to the
+		# A/B-stripped form (some flows ship a single uboot.img for both slots).
+		local img_file=""
+		if [ -f "$image_dir/${pname}.img" ]; then
+			img_file=$image_dir/${pname}.img
+		elif [ -f "$image_dir/${pname%_[ab]}.img" ]; then
+			img_file=$image_dir/${pname%_[ab]}.img
+		fi
+
+		if [ "$psize" = "-" ]; then
+			# Growup partition (userdata). Remember its offset and skip; we
+			# append our 1 GiB ext4 there ourselves.
+			[ "$pname" = "userdata" ] && userdata_offset_sec=$(( poff / 512 ))
+			IFS=,
+			continue
+		fi
+
+		if [ -z "$img_file" ]; then
+			# No image for this partition (e.g. misc) — leave as zeros.
+			IFS=,
+			continue
+		fi
+
+		local off_sec=$(( poff / 512 ))
+		local end_sec=$(( (poff + psize) / 512 ))
+		parts+=("$img_file $off_sec")
+		[ $end_sec -gt $userdata_offset_sec ] && userdata_offset_sec=$end_sec
+		IFS=,
+	done
+	IFS=$IFS_save
+
+	if [ ${#parts[@]} -eq 0 ]; then
+		msg_error "No fixed-size partition images found in $image_dir"
+		exit 1
+	fi
+	if [ $userdata_offset_sec -eq 0 ]; then
+		msg_error "Could not determine userdata offset"
+		exit 1
+	fi
+
+	local total_bytes=$(( userdata_offset_sec * 512 + userdata_size_bytes ))
+
+	msg_info "Building SD dd image: $out"
+	msg_info "  userdata starts at sector $userdata_offset_sec (0x$(printf %X $userdata_offset_sec), byte 0x$(printf %X $((userdata_offset_sec * 512))))"
+	msg_info "  total size: $((total_bytes / 1024 / 1024)) MiB"
+
+	rm -f $out
+	truncate -s $total_bytes $out
+
+	# Write each fixed partition image at its sector offset. conv=sparse keeps
+	# zero blocks (e.g. squashfs padding inside system_a/b) as holes.
+	local entry
+	for entry in "${parts[@]}"; do
+		local img=${entry%% *}
+		local off_sec=${entry##* }
+		printf "  [%-16s] sector 0x%-8X  %s\n" "$(basename $img)" "$off_sec" "$(du -h $img | cut -f1)"
+		dd if=$img of=$out bs=512 seek=$off_sec \
+			conv=notrunc,sparse status=none
+	done
+
+	printf "  [%-16s] sector 0x%-8X  %s\n" "userdata.img" "$userdata_offset_sec" \
+		"$(du -h $userdata_img | cut -f1)"
+	dd if=$userdata_img of=$out bs=512 seek=$userdata_offset_sec \
+		conv=notrunc,sparse status=none
+
+	sync $out
+
+	# Zip it. The image is mostly zero-filled holes; deflate squeezes them flat.
+	rm -f $out_zip
+	(cd $image_dir && zip -9 $(basename $out_zip) $(basename $out))
+
+	msg_info "SD dd image: $out_zip ($(du -h $out_zip | cut -f1))"
+
+	finish_build
+}
+
 function build_unpack_updateimg(){
 	IMAGE_PATH=$RK_PROJECT_OUTPUT_IMAGE/update.img
 	UNPACK_FILE_DIR=$RK_PROJECT_OUTPUT_IMAGE/unpack
@@ -2261,6 +2387,7 @@ function build_firmware(){
 
 	[ "$RK_ENABLE_RECOVERY" = "y" -o "$RK_ENABLE_OTA" = "y" ] && build_ota
 	build_updateimg
+	build_sd_dd_image
 
 	finish_build
 }

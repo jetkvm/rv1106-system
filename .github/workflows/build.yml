@@ -24,7 +24,8 @@ jobs:
             build-essential autoconf autotools-dev \
             device-tree-compiler \
             gperf g++-multilib gcc-multilib \
-            libnl-3-dev libdbus-1-dev libelf-dev libmpc-dev dwarves
+            libnl-3-dev libdbus-1-dev libelf-dev libmpc-dev dwarves \
+            zip
       - name: Get build version
         run: |
           export BUILD_VERSION=$(cat VERSION)
@@ -52,12 +53,21 @@ jobs:
           name: OTA-Image-${{ matrix.board }}
           path: output/image/update_ota.tar
           retention-days: 7
-      - name: Upload Full image
+      - name: Upload Full image (EMMC)
+        if: matrix.board == 'EMMC'
         uses: actions/upload-artifact@v4
         with:
-          name: Full-Image-${{ matrix.board }}
+          name: Full-Image-EMMC
           path: output/image/update.img
           retention-days: 7
+      - name: Upload SD image (SDMMC)
+        if: matrix.board == 'SDMMC'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SD-Image-SDMMC
+          path: output/image/update_sd.img.zip
+          retention-days: 7
+          compression-level: 0
       - name: Create compressed buildkit
         if: matrix.board == 'EMMC'
         run: |
