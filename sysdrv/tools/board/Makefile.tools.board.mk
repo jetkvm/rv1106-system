@@ -71,7 +71,7 @@ ifeq ($(ENABLE_ROCKCHIP_TEST),y)
 endif
 
 board-build-e2fsprogs:
-ifeq ($(BOOT_MEDIUM),emmc)
+ifneq ($(findstring $(BOOT_MEDIUM),emmc sdmmc),)
 	$(MAKE) -C $(SYSDRV_DIR)/tools/board/e2fsprogs
 endif
 

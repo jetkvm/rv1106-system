@@ -27,7 +27,7 @@ ifeq ($(CHIP),)
 CHIP := $(CONFIG_SYSDRV_CHIP)
 endif
 
-ifneq ($(findstring $(RK_BOOT_MEDIUM),emmc spi_nor spi_nand slc_nand),)
+ifneq ($(findstring $(RK_BOOT_MEDIUM),emmc sdmmc spi_nor spi_nand slc_nand),)
 BOOT_MEDIUM := $(RK_BOOT_MEDIUM)
 endif
 

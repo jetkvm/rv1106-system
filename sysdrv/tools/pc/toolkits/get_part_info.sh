@@ -265,7 +265,7 @@ if [ -z "$1" -o -z "$2" -o -z "$3" ]; then
 fi
 
 PARTITION_FIRST_NO=1
-if [ "$4" = "emmc" ];then
+if [ "$4" = "emmc" -o "$4" = "sdmmc" ];then
 PARTITION_FIRST_NO=0
 fi
 
