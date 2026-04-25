@@ -8,8 +8,12 @@ on:
 
 jobs:
   build:
-    runs-on: buildjet-16vcpu-ubuntu-2204
-    name: Build
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [EMMC, SDMMC]
+    name: Build (${{ matrix.board }})
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,29 +38,32 @@ jobs:
           echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
           echo "BUILD_VERSION_SOURCE=$BUILD_VERSION_SOURCE" >> $GITHUB_ENV
           echo "$BUILD_VERSION" > VERSION
+      - name: Update jetkvm_app
+        run: ./update_app.sh
       - name: Build
         run: |
           echo "Version: $BUILD_VERSION (from $BUILD_VERSION_SOURCE)"
 
-          ./update_app.sh
-          ./build.sh lunch BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
+          ./build.sh lunch BoardConfig_IPC/BoardConfig-${{ matrix.board }}-NONE-RV1106_JETKVM_V2.mk
           ./build.sh
       - name: Upload OTA image
         uses: actions/upload-artifact@v4
         with:
-          name: OTA Image
+          name: OTA-Image-${{ matrix.board }}
           path: output/image/update_ota.tar
           retention-days: 7
       - name: Upload Full image
         uses: actions/upload-artifact@v4
         with:
-          name: Full Image
+          name: Full-Image-${{ matrix.board }}
           path: output/image/update.img
           retention-days: 7
       - name: Create compressed buildkit
+        if: matrix.board == 'EMMC'
         run: |
           ./make_buildkit.sh
       - name: Upload buildkit
+        if: matrix.board == 'EMMC'
         uses: actions/upload-artifact@v4
         with:
           name: jetkvm-native-buildkit
