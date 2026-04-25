@@ -12,6 +12,9 @@ export RK_TOOLCHAIN_CROSS=arm-rockchip830-linux-uclibcgnueabihf
 # Target boot medium: emmc/spi_nor/spi_nand/sdmmc
 export RK_BOOT_MEDIUM=sdmmc
 
+# SKU identifier reported to OTA service
+export RK_SKU=jetkvm-sdmmc
+
 # Uboot defconfig
 export RK_UBOOT_DEFCONFIG=rv1106-jetkvm-v2_defconfig
 

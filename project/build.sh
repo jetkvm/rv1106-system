@@ -1286,6 +1286,10 @@ EOF
 		(cd $RK_PROJECT_PACKAGE_ROOTFS_DIR/etc; ln -sf ../usr/share/iqfiles ./)
 	fi
 
+	if [ -n "$RK_SKU" ]; then
+		echo "$RK_SKU" > $RK_PROJECT_PACKAGE_ROOTFS_DIR/etc/jetkvm-sku
+	fi
+
 	if [ -f $RK_PROJECT_FILE_ROOTFS_SCRIPT ];then
 		chmod a+x $RK_PROJECT_FILE_ROOTFS_SCRIPT
 		cp -f $RK_PROJECT_FILE_ROOTFS_SCRIPT $RK_PROJECT_PACKAGE_ROOTFS_DIR/etc/init.d
