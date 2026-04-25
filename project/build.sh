@@ -524,7 +524,7 @@ function build_uboot(){
 
 		build_mcu $RK_UBOOT_RKBIN_MCU_CFG "__MCU_CONTINUE__"
 		case $RK_BOOT_MEDIUM in
-			emmc)
+			emmc|sdmmc)
 				tempfile=$target_ini_dir/RV1106MINIALL_EMMC_TB.ini
 				;;
 			spi_nor)
@@ -587,7 +587,11 @@ function build_env(){
 	fi
 
 	echo "$SYS_BOOTARGS" >> $ENV_CFG_FILE
-	echo "sd_parts=mmcblk0:16K@512(env),512K@32K(idblock),4M(uboot)" >> $ENV_CFG_FILE
+	case $RK_BOOT_MEDIUM in
+		sdmmc) local _mmc_dev=mmcblk1 ;;
+		*)     local _mmc_dev=mmcblk0 ;;
+	esac
+	echo "sd_parts=${_mmc_dev}:16K@512(env),512K@32K(idblock),4M(uboot)" >> $ENV_CFG_FILE
 	# build env.img
 	$RK_PROJECT_PATH_PC_TOOLS/mkenvimage -s $ENV_SIZE -p 0x0 -o $env_cfg_img $ENV_CFG_FILE
 	chmod +r $env_cfg_img
@@ -752,7 +756,7 @@ EOF
 	echo "echo \"Erase misc partition\"" >> $erase_misc_script
 
 	case $RK_BOOT_MEDIUM in
-		emmc|spi_nor)
+		emmc|sdmmc|spi_nor)
 			echo "dd if=/dev/zero of=/dev/block/by-name/misc bs=32 count=1 seek=512" >> $erase_misc_script
 			echo "if [ \$? -ne 0 ];then" >> $erase_misc_script
 			echo "	echo \"Error: Erase misc partition failed.\"" >> $erase_misc_script
@@ -836,7 +840,7 @@ EOF
 	echo "echo \"Start to write partitions\"" >> $ota_script
 
 	case $RK_BOOT_MEDIUM in
-		emmc|spi_nor)
+		emmc|sdmmc|spi_nor)
 			echo "for image in \$(ls /dev/block/by-name)" >> $ota_script
 			echo "do" >> $ota_script
 			echo "	if [ -f \$COMMON_DIR/\${image}.img ];then" >> $ota_script
@@ -969,7 +973,7 @@ function build_factory(){
 	# run programmer image tool
 	mkdir -p $FACTORY_FILE_DIR
 	case $RK_BOOT_MEDIUM in
-		emmc)
+		emmc|sdmmc)
 			$PROGRAMMER_TOOL_PATH/programmer_image_tool -i $IMAGE_PATH -o $FACTORY_FILE_DIR -t emmc
 			;;
 		spi_nor)
@@ -1473,6 +1477,11 @@ function parse_partition_file()
 			RK_PARTITION_ARGS="blkdevparts=mmcblk0:$RK_PARTITION_CMD_IN_ENV"
 			part_num=1
 			;;
+		sdmmc)
+			storage_dev_prefix=mmcblk1p
+			RK_PARTITION_ARGS="blkdevparts=mmcblk1:$RK_PARTITION_CMD_IN_ENV"
+			part_num=1
+			;;
 		spi_nor)
 			storage_dev_prefix=mtdblock
 			RK_PARTITION_ARGS="mtdparts=sfc_nor:$RK_PARTITION_CMD_IN_ENV"
@@ -1540,6 +1549,13 @@ function parse_partition_file()
 						SYS_BOOTARGS="${SYS_BOOTARGS} root=/dev/mmcblk0p${part_num}"
 					fi
 					;;
+				sdmmc)
+					if [ "$RK_ENABLE_FASTBOOT" = "y" -a "$RK_ENABLE_RAMDISK_PARTITION" = "y" ]; then
+						SYS_BOOTARGS="${SYS_BOOTARGS} root=/dev/rd0"
+					else
+						SYS_BOOTARGS="${SYS_BOOTARGS} root=/dev/mmcblk1p${part_num}"
+					fi
+					;;
 				spi_nor)
 					if [ "$RK_ENABLE_FASTBOOT" = "y" -a "$RK_ENABLE_RAMDISK_PARTITION" = "y" ]; then
 						SYS_BOOTARGS="${SYS_BOOTARGS} root=/dev/rd0"
@@ -1590,7 +1606,7 @@ if [ ! -d \$mountpt ]; then
 fi
 if test -h \$part_dev; then
 case \$bootmedium in
-	emmc)
+	emmc|sdmmc)
 		if [ "\$root_dev" = "\$part_realdev" ];then
 			resize2fs \$part_dev
 		else
@@ -1823,7 +1839,7 @@ function __GET_TARGET_PARTITION_FS_TYPE()
 			GLOBAL_ROOT_FILESYSTEM_NAME=${part_name%_[ab]}
 			export RK_PROJECT_ROOTFS_TYPE=$part_fs_type
 			case $RK_BOOT_MEDIUM in
-				emmc)
+				emmc|sdmmc)
 					SYS_BOOTARGS="$SYS_BOOTARGS rootfstype=$part_fs_type"
 					;;
 				spi_nor)

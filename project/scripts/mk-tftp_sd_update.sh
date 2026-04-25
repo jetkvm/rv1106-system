@@ -86,7 +86,7 @@ function mkcmdline(){
 	eraseddr $fileSize $SD_FILE_NAME
 	mkfatload $fileName $SD_FILE_NAME
 
-	if [ "$BOOT_MEDIUM" == "emmc" ];then
+	if [ "$BOOT_MEDIUM" == "emmc" ] || [ "$BOOT_MEDIUM" == "sdmmc" ];then
 		mkemmc $partitionOffsetSector $fileSizeSector $TFTP_FILE_NAME
 		mkemmc $partitionOffsetSector $fileSizeSector $SD_FILE_NAME
 	elif [ "$BOOT_MEDIUM" == "spi_nand" ];then

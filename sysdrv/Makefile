@@ -150,6 +150,15 @@ KERNEL_CMDLINE_FRAGMENT += rootfstype=$(SYSDRV_ROOTFS_FS_TYPE) \
 						   root=/dev/mmcblk0p$(ROOTFS_PART_NUM)
 endif
 
+ifeq ($(BOOT_MEDIUM), sdmmc)
+SYSDRV_ROOTFS_BUILD_TARGET := rootfs_ext4
+ifeq ($(SYSDRV_ROOTFS_FS_TYPE),)
+SYSDRV_ROOTFS_FS_TYPE := ext4
+endif
+KERNEL_CMDLINE_FRAGMENT += rootfstype=$(SYSDRV_ROOTFS_FS_TYPE) \
+						   root=/dev/mmcblk1p$(ROOTFS_PART_NUM)
+endif
+
 ifeq ($(BOOT_MEDIUM), spi_nor)
 SYSDRV_ROOTFS_BUILD_TARGET := rootfs_jffs2
 ifeq ($(SYSDRV_ROOTFS_FS_TYPE),)
@@ -629,6 +638,11 @@ ifeq ($(BOOT_MEDIUM),emmc)
 	@echo "blkdevparts=mmcblk0:$(CONFIG_SYSDRV_PARTITION)" > $(SYSDRV_UBOOT_ENV_CFG_FILE)
 	@test "$(ROOTFS_PART_NUM)" = "FAIL" || \
 		echo "sys_bootargs=root=/dev/mmcblk0p$(ROOTFS_PART_NUM)" >> $(SYSDRV_UBOOT_ENV_CFG_FILE)
+endif
+ifeq ($(BOOT_MEDIUM),sdmmc)
+	@echo "blkdevparts=mmcblk1:$(CONFIG_SYSDRV_PARTITION)" > $(SYSDRV_UBOOT_ENV_CFG_FILE)
+	@test "$(ROOTFS_PART_NUM)" = "FAIL" || \
+		echo "sys_bootargs=root=/dev/mmcblk1p$(ROOTFS_PART_NUM)" >> $(SYSDRV_UBOOT_ENV_CFG_FILE)
 endif
 ifeq ($(BOOT_MEDIUM),spi_nor)
 	@echo "mtdparts=sfc_nor:$(CONFIG_SYSDRV_PARTITION)" > $(SYSDRV_UBOOT_ENV_CFG_FILE)

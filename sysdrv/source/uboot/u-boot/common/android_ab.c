@@ -473,7 +473,7 @@ void ab_update_root_partition(void)
 	switch (dev_desc->if_type) {
 	case IF_TYPE_MMC:
 		if (strstr(part_type, "ENV"))
-			snprintf(root_part_dev, 64, "root=/dev/mmcblk0p%d", part_num);
+			snprintf(root_part_dev, 64, "root=/dev/mmcblk%dp%d", dev_desc->devnum, part_num);
 		else if (strstr(part_type, "EFI"))
 			ab_update_root_uuid();
 		break;
