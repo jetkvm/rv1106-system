@@ -2016,7 +2016,7 @@ function build_mkimg()
 						$fit_target_optional_param
 				fi
 			else
-				if [ "$RK_BOOT_MEDIUM" = "emmc" -o "$RK_BOOT_MEDIUM" = "spi_nor" ];then
+				if [ "$RK_BOOT_MEDIUM" = "emmc" -o "$RK_BOOT_MEDIUM" = "spi_nor" -o "$RK_BOOT_MEDIUM" = "sdmmc" ];then
 					$RK_PROJECT_TOOLS_MKFS_EROFS $src $dst $RK_EROFS_COMP
 				else
 					$RK_PROJECT_TOOLS_MKFS_UBIFS $src $(dirname $dst) $part_size $part_name $fs_type $RK_EROFS_COMP
@@ -2024,7 +2024,7 @@ function build_mkimg()
 			fi
 			;;
 		squashfs)
-			if [ "$RK_BOOT_MEDIUM" = "emmc" -o "$RK_BOOT_MEDIUM" = "spi_nor" ];then
+			if [ "$RK_BOOT_MEDIUM" = "emmc" -o "$RK_BOOT_MEDIUM" = "spi_nor" -o "$RK_BOOT_MEDIUM" = "sdmmc" ];then
 				$RK_PROJECT_TOOLS_MKFS_SQUASHFS $src $dst $RK_SQUASHFS_COMP
 			else
 				$RK_PROJECT_TOOLS_MKFS_UBIFS $src $(dirname $dst) $part_size $part_name $fs_type $RK_SQUASHFS_COMP
