@@ -1598,7 +1598,7 @@ mountpt=\$2
 part_fstype=\$3
 part_realdev=\$(realpath \$part_dev)
 if [ ! -d \$mountpt ]; then
-	if [ "\$mountpt" = "IGNORE" -a "emmc" = "\$bootmedium" ];then
+	if [ "\$mountpt" = "IGNORE" -a \( "emmc" = "\$bootmedium" -o "sdmmc" = "\$bootmedium" \) ];then
 		if [ "\$root_dev" = "\$part_realdev" ];then
 			resize2fs \$part_dev
 		fi
