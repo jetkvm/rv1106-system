@@ -975,6 +975,10 @@ function build_sd_dd_image(){
 	[ -x "$mkfs_dir/bin/mkfs.ext4" ] && mkfs_bin=$mkfs_dir/bin/mkfs.ext4
 
 	mkdir -p $RK_PROJECT_PACKAGE_USERDATA_DIR
+	# Match build_mkimg: strip + chown root:root so the seeded tree on the SD
+	# card doesn't depend on the build host's uid/gid. build_mkimg userdata
+	# is a no-op on SDMMC (size '-' → part_size=0), so we run it here.
+	__RELEASE_FILESYSTEM_FILES $RK_PROJECT_PACKAGE_USERDATA_DIR
 	rm -f $userdata_img
 	MKE2FS_CONFIG=$mkfs_dir/mke2fs.conf $mkfs_bin \
 		-d $RK_PROJECT_PACKAGE_USERDATA_DIR \
