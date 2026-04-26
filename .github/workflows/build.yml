@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-16vcpu-ubuntu-2204
     name: Build
     steps:
       - name: Checkout

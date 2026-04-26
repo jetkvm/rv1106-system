@@ -18,6 +18,9 @@ OTA_ROOT_KEY_FPR := AF5A36A993D828FEFE7C18C2D1B9856C26A79E95
 
 .PHONY: build flash test dev_release release bump-version git_check_dev clean check_device check_remote check_signing_key
 
+# Keep production signing validation ahead of build/test even under `make -j`.
+.NOTPARALLEL: release
+
 # -----------------------------------------------------------------------------
 # Git checks
 # -----------------------------------------------------------------------------
@@ -128,8 +131,7 @@ dev_release: git_check_dev test
 	@echo "═══════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Proceed? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-# Next line: SIGNING_KEY_FPR= clears the var for this subprocess only (no production signature on dev uploads).
-	SIGNING_KEY_FPR= ./scripts/release_r2.sh --version $(VERSION_DEV)
+	./scripts/release_r2.sh --version $(VERSION_DEV) --unsigned
 	./scripts/release_github.sh --version $(VERSION_DEV) --prerelease
 	@echo ""
 	@echo "OK: Dev release complete: release/v$(VERSION_DEV)"
@@ -168,7 +170,7 @@ release: check_signing_key git_check_dev test
 	@echo "═══════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Proceed with PRODUCTION release? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	SIGNING_KEY_FPR=$(SIGNING_KEY_FPR) ./scripts/release_r2.sh --version $(VERSION)
+	./scripts/release_r2.sh --version $(VERSION) --signing-key $(SIGNING_KEY_FPR)
 	./scripts/release_github.sh --version $(VERSION)
 	@echo ""
 	@echo "OK: Production release complete: release/v$(VERSION)"
