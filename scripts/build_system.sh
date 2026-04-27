@@ -13,6 +13,36 @@ if [ -z "${BUILD_VERSION:-}" ]; then
     export BUILD_VERSION_SOURCE="local-dev"
 fi
 
+BUILD_LOG_DIR="${BUILD_LOG_DIR:-${ROOT_DIR}/release-artifacts/logs}"
+
+run_quiet() {
+    local label="$1"
+    shift
+
+    if [ "${VERBOSE_BUILD:-0}" = "1" ]; then
+        "$@"
+        return
+    fi
+
+    mkdir -p "$BUILD_LOG_DIR"
+    local safe_label="${label// /_}"
+    local log_file="${BUILD_LOG_DIR}/$(date -u +%Y%m%d%H%M%S)-${safe_label}.log"
+
+    msg_info "  ${label}..."
+    msg_info "    log: ${log_file#${ROOT_DIR}/}"
+    if "$@" > "$log_file" 2>&1; then
+        msg_ok "  OK: ${label}"
+        return
+    fi
+
+    local status=$?
+    msg_err "Error: ${label} failed (exit ${status}); log: ${log_file}"
+    awk 'BEGIN { IGNORECASE = 1 } /error|failed|permission denied|not found|no such file/ { print }' "$log_file" | tail -n 80 >&2 || true
+    msg_err "Last 40 log lines:"
+    tail -n 40 "$log_file" >&2 || true
+    return "$status"
+}
+
 stage_system_variant() {
     local label="$1"
     local sku="$2"
@@ -93,11 +123,8 @@ build_system_variant() {
     local board_config="$3"
     local require_sd_zip="${4:-false}"
 
-    msg_info "  Running build.sh lunch for ${label} (${sku})..."
-    ./build.sh lunch "$board_config"
-
-    msg_info "  Running build.sh for ${label}..."
-    ./build.sh
+    run_quiet "Selecting ${label} board (${sku})" ./build.sh lunch "$board_config"
+    run_quiet "Building ${label} system image" ./build.sh
 
     stage_system_variant "$label" "$sku" "$require_sd_zip"
     prompt_test_system_variant "$label" "$sku"
@@ -106,8 +133,11 @@ build_system_variant() {
 msg_info ">> Building rv1106-system..."
 cd "$ROOT_DIR"
 
-msg_info "  Updating JetKVM app binary..."
-./update_app.sh
+msg_info "  Cleaning previous build output..."
+sudo rm -rf output/
+run_quiet "Cleaning SDK output" ./build.sh clean
+
+run_quiet "Updating JetKVM app binary" ./update_app.sh
 
 rm -rf "$SYSTEM_RELEASE_DIR"
 
@@ -115,7 +145,7 @@ build_system_variant "SDMMC" "$SDMMC_SKU" "$SDMMC_BOARD_CONFIG" true
 
 msg_info "  Cleaning build output before EMMC..."
 sudo rm -rf output/
-./build.sh clean
+run_quiet "Cleaning SDK output before EMMC" ./build.sh clean
 
 build_system_variant "EMMC" "$EMMC_SKU" "$EMMC_BOARD_CONFIG"
 

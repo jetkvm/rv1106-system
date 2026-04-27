@@ -77,7 +77,7 @@ check_signing_key:
 # -----------------------------------------------------------------------------
 # Build / Flash / Test (dependency chain)
 # -----------------------------------------------------------------------------
-build: clean
+build:
 	./scripts/build_system.sh
 
 check_device:
