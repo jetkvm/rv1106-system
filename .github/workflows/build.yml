@@ -12,7 +12,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        board: [EMMC, SDMMC]
+        include:
+          - board: EMMC
+            sku: jetkvm-v2
+          - board: SDMMC
+            sku: jetkvm-v2-sdmmc
     name: Build (${{ matrix.board }})
     steps:
       - name: Checkout
@@ -40,7 +44,7 @@ jobs:
           echo "BUILD_VERSION_SOURCE=$BUILD_VERSION_SOURCE" >> $GITHUB_ENV
           echo "$BUILD_VERSION" > VERSION
       - name: Update jetkvm_app
-        run: ./update_app.sh
+        run: ./update_app.sh "${{ matrix.sku }}"
       - name: Build
         run: |
           echo "Version: $BUILD_VERSION (from $BUILD_VERSION_SOURCE)"

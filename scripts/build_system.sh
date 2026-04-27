@@ -128,6 +128,7 @@ build_system_variant() {
     local require_sd_zip="${4:-false}"
 
     run_quiet "Selecting ${label} board (${sku})" ./build.sh lunch "$board_config"
+    run_quiet "Updating JetKVM app binary for ${label} (${sku})" ./update_app.sh "$sku"
     run_quiet "Building ${label} system image" ./build.sh
 
     stage_system_variant "$label" "$sku" "$require_sd_zip"
@@ -140,8 +141,6 @@ cd "$ROOT_DIR"
 msg_info "  Cleaning previous build output..."
 sudo rm -rf output/
 run_quiet "Cleaning SDK output" ./build.sh clean
-
-run_quiet "Updating JetKVM app binary" ./update_app.sh
 
 rm -rf "$SYSTEM_RELEASE_DIR"
 
