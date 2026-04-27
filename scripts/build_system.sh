@@ -114,6 +114,7 @@ rm -rf "$SYSTEM_RELEASE_DIR"
 build_system_variant "SDMMC" "$SDMMC_SKU" "$SDMMC_BOARD_CONFIG" true
 
 msg_info "  Cleaning build output before EMMC..."
+sudo rm -rf output/
 ./build.sh clean
 
 build_system_variant "EMMC" "$EMMC_SKU" "$EMMC_BOARD_CONFIG"
