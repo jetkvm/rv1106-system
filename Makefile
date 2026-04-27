@@ -4,8 +4,9 @@
 #   build        - Build rv1106-system image
 #   flash        - Flash system image to device (depends on build)
 #   test         - Run E2E tests (depends on flash)
-#   dev_release  - Dev release (prerelease) with testing
-#   release      - Production release with testing
+#   dev_release  - Dev release (prerelease) with optional per-SKU testing
+#   release      - Production release with optional per-SKU testing
+#   release_dry_run - Build, optionally test, and sign without uploading
 #   bump-version - Bump version for next release cycle
 
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
@@ -16,10 +17,10 @@ R2_PATH := r2://jetkvm-update/system
 SIGNING_KEY_FPR ?=
 OTA_ROOT_KEY_FPR := AF5A36A993D828FEFE7C18C2D1B9856C26A79E95
 
-.PHONY: build flash test dev_release release bump-version git_check_dev clean check_device check_remote check_signing_key
+.PHONY: build flash test dev_release release release_dry_run bump-version git_check_dev clean check_device check_remote check_signing_key
 
-# Keep production signing validation ahead of build/test even under `make -j`.
-.NOTPARALLEL: release
+# Keep release validation, build/test prompts, and signing ordered even under `make -j`.
+.NOTPARALLEL: dev_release release release_dry_run
 
 # -----------------------------------------------------------------------------
 # Git checks
@@ -94,7 +95,7 @@ check_remote:
 flash:
 	$(MAKE) check_device
 ifndef SKIP_BUILD
-	$(MAKE) build
+	PROMPT_VARIANT_TESTS=0 $(MAKE) build
 endif
 	./scripts/flash_system.sh -r $(DEVICE_IP)
 
@@ -112,7 +113,7 @@ endif
 # Dev Release - Prerelease for testing
 # -----------------------------------------------------------------------------
 dev_release: export BUILD_VERSION := $(VERSION_DEV)
-dev_release: git_check_dev test
+dev_release: git_check_dev build
 	@if rclone lsf $(R2_PATH)/$(VERSION_DEV)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION_DEV) already exists in R2"; exit 1; \
 	fi
@@ -140,7 +141,7 @@ dev_release: git_check_dev test
 # Production Release
 # -----------------------------------------------------------------------------
 release: export BUILD_VERSION := $(VERSION)
-release: check_signing_key git_check_dev test
+release: check_signing_key git_check_dev build
 	@if rclone lsf $(R2_PATH)/$(VERSION)/ 2>/dev/null | grep -q .; then \
 		echo "Error: Version $(VERSION) already exists in R2"; exit 1; \
 	fi
@@ -178,6 +179,28 @@ release: check_signing_key git_check_dev test
 	@echo "Next: Run 'make bump-version' to prepare for next release cycle"
 
 # -----------------------------------------------------------------------------
+# Production Release Dry Run
+# -----------------------------------------------------------------------------
+release_dry_run: export BUILD_VERSION := $(VERSION)
+release_dry_run: check_signing_key build
+	@echo ""
+	@echo "═══════════════════════════════════════════════════════"
+	@echo "  PRODUCTION Release Dry Run"
+	@echo "═══════════════════════════════════════════════════════"
+	@echo "  Version: $(VERSION)"
+	@echo "  Tag:     release/v$(VERSION)"
+	@echo "  Branch:  $$(git rev-parse --abbrev-ref HEAD)"
+	@echo "  Commit:  $$(git rev-parse --short HEAD)"
+	@echo "  Subject: $$(git log -1 --pretty=%s)"
+	@echo "  Signing: $(SIGNING_KEY_FPR)"
+	@echo "═══════════════════════════════════════════════════════"
+	@echo ""
+	./scripts/release_r2.sh --dry-run --version $(VERSION) --signing-key $(SIGNING_KEY_FPR)
+	./scripts/release_github.sh --dry-run --version $(VERSION)
+	@echo ""
+	@echo "OK: Production release dry run complete: release/v$(VERSION)"
+
+# -----------------------------------------------------------------------------
 # Bump Version
 # -----------------------------------------------------------------------------
 bump-version:
@@ -202,5 +225,6 @@ clean:
 	@echo "Cleaning build artifacts..."
 	sudo rm -rf output/
 	./build.sh clean
+	rm -rf release-artifacts/
 	rm -f buildkit.tar.zst
 	@echo "OK: Clean complete"

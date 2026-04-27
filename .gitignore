@@ -1,5 +1,6 @@
 IMAGE/*
 output/*
+release-artifacts/*
 !IMAGE/.gitkeep
 !output/.gitkeep
 .BoardConfig.mk

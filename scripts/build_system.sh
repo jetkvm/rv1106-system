@@ -13,29 +13,109 @@ if [ -z "${BUILD_VERSION:-}" ]; then
     export BUILD_VERSION_SOURCE="local-dev"
 fi
 
+stage_system_variant() {
+    local label="$1"
+    local sku="$2"
+    local require_sd_zip="${3:-false}"
+    local stage_dir
+
+    stage_dir=$(system_variant_dir "$sku")
+    mkdir -p "$stage_dir"
+
+    if [ ! -f "$OTA_TAR" ]; then
+        msg_err "Error: $OTA_TAR not found after ${label} build"
+        exit 1
+    fi
+    if [ ! -f "$FULL_IMG" ]; then
+        msg_err "Error: $FULL_IMG not found after ${label} build"
+        exit 1
+    fi
+
+    msg_info "  Staging ${label} system artifacts (${sku})..."
+    cp --reflink=auto "$OTA_TAR" "${stage_dir}/${SYSTEM_TAR_NAME}"
+    cp --reflink=auto "$FULL_IMG" "${stage_dir}/${FULL_IMG_NAME}"
+    sha256sum "${stage_dir}/${SYSTEM_TAR_NAME}" | awk '{print $1}' > "${stage_dir}/${SYSTEM_TAR_NAME}.sha256"
+    sha256sum "${stage_dir}/${FULL_IMG_NAME}" | awk '{print $1}' > "${stage_dir}/${FULL_IMG_NAME}.sha256"
+
+    if [ "$require_sd_zip" = true ]; then
+        if [ ! -f "$SD_IMG_ZIP" ]; then
+            msg_err "Error: $SD_IMG_ZIP not found after ${label} build"
+            exit 1
+        fi
+        cp --reflink=auto "$SD_IMG_ZIP" "${stage_dir}/${SD_IMG_ZIP_NAME}"
+        sha256sum "${stage_dir}/${SD_IMG_ZIP_NAME}" | awk '{print $1}' > "${stage_dir}/${SD_IMG_ZIP_NAME}.sha256"
+    fi
+}
+
+prompt_test_system_variant() {
+    local label="$1"
+    local sku="$2"
+    local confirm
+    local device_ip="${DEVICE_IP:-192.168.1.77}"
+    local device_user="${DEVICE_USER:-root}"
+    local test_args=("-r" "$device_ip" "-u" "$device_user")
+
+    if [ "${PROMPT_VARIANT_TESTS:-1}" != "1" ]; then
+        return 0
+    fi
+
+    echo ""
+    read -p "Test ${label} (${sku}) on a device now? [y/N] " confirm
+    if [ "$confirm" != "y" ]; then
+        msg_warn "Skipping ${label} E2E test"
+        return 0
+    fi
+
+    if [ -z "${JETKVM_REMOTE_HOST:-}" ]; then
+        msg_err "Error: JETKVM_REMOTE_HOST is required to run E2E tests"
+        msg_err "Re-run with JETKVM_REMOTE_HOST=<user@host> and DEVICE_IP=${device_ip} if needed"
+        exit 1
+    fi
+
+    test_args+=("--remote-host" "$JETKVM_REMOTE_HOST")
+    if [ -n "${KVM_DIR:-}" ]; then
+        test_args+=("--kvm-dir" "$KVM_DIR")
+    fi
+    if [ -n "${KVM_BRANCH:-}" ]; then
+        test_args+=("--kvm-branch" "$KVM_BRANCH")
+    fi
+
+    msg_info "  Flashing ${label} build to ${device_user}@${device_ip}..."
+    ./scripts/flash_system.sh -r "$device_ip" -u "$device_user"
+
+    msg_info "  Running ${label} E2E tests..."
+    ./scripts/run_e2e_tests.sh "${test_args[@]}"
+}
+
+build_system_variant() {
+    local label="$1"
+    local sku="$2"
+    local board_config="$3"
+    local require_sd_zip="${4:-false}"
+
+    msg_info "  Running build.sh lunch for ${label} (${sku})..."
+    ./build.sh lunch "$board_config"
+
+    msg_info "  Running build.sh for ${label}..."
+    ./build.sh
+
+    stage_system_variant "$label" "$sku" "$require_sd_zip"
+    prompt_test_system_variant "$label" "$sku"
+}
+
 msg_info ">> Building rv1106-system..."
 cd "$ROOT_DIR"
 
 msg_info "  Updating JetKVM app binary..."
 ./update_app.sh
 
-msg_info "  Running build.sh lunch..."
-./build.sh lunch BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk
+rm -rf "$SYSTEM_RELEASE_DIR"
 
-msg_info "  Running build.sh..."
-./build.sh
+build_system_variant "SDMMC" "$SDMMC_SKU" "$SDMMC_BOARD_CONFIG" true
 
-if [ ! -f "$OTA_TAR" ]; then
-    msg_err "Error: $OTA_TAR not found after build"
-    exit 1
-fi
-if [ ! -f "$FULL_IMG" ]; then
-    msg_err "Error: $FULL_IMG not found after build"
-    exit 1
-fi
+msg_info "  Cleaning build output before EMMC..."
+./build.sh clean
 
-msg_info "  Computing SHA256 checksums..."
-sha256sum "$OTA_TAR" | awk '{print $1}' > "${OTA_TAR}.sha256"
-sha256sum "$FULL_IMG" | awk '{print $1}' > "${FULL_IMG}.sha256"
+build_system_variant "EMMC" "$EMMC_SKU" "$EMMC_BOARD_CONFIG"
 
 msg_ok "OK: Build completed"

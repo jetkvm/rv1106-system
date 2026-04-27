@@ -9,17 +9,19 @@ BUILD_VERSION=""
 R2_PATH="${R2_PATH:-r2://jetkvm-update/system}"
 SIGNING_KEY_FPR=""
 UNSIGNED=false
+DRY_RUN=false
 OTA_ROOT_KEY_FPR="AF5A36A993D828FEFE7C18C2D1B9856C26A79E95"
 
 source "${SCRIPT_DIR}/common.sh"
 
 show_help() {
-    echo "Usage: $0 --version <version> (--signing-key <fingerprint> | --unsigned)"
+    echo "Usage: $0 --version <version> (--signing-key <fingerprint> | --unsigned) [--dry-run]"
     echo
     echo "Options:"
     echo "  --version <version>   Release version (e.g., 0.2.7)"
     echo "  --signing-key <fpr>   Sign the OTA payload with the trusted production key"
     echo "  --unsigned            Upload without an OTA signature (dev/prerelease only)"
+    echo "  --dry-run             Sign and validate, but do not upload to R2"
     echo "  --help                Show this help message"
     echo
 }
@@ -77,6 +79,10 @@ while [[ $# -gt 0 ]]; do
             UNSIGNED=true
             shift
             ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
         --help)
             show_help
             exit 0
@@ -108,81 +114,144 @@ if [ -n "$SIGNING_KEY_FPR" ]; then
     validate_signing_key "$SIGNING_KEY_FPR"
 fi
 
-command -v rclone >/dev/null 2>&1 || { msg_err "Error: rclone not installed"; exit 1; }
+if [ "$DRY_RUN" != true ]; then
+    command -v rclone >/dev/null 2>&1 || { msg_err "Error: rclone not installed"; exit 1; }
+fi
 
 cd "$ROOT_DIR"
 
-ota_tar="$OTA_TAR"
-ota_sha="${OTA_TAR}.sha256"
-ota_sig="${OTA_TAR}.sig"
-full_img="$FULL_IMG"
-img_sha="${FULL_IMG}.sha256"
+validate_system_variant() {
+    local label="$1"
+    local sku="$2"
+    local stage_dir
 
-for file in "$ota_tar" "$full_img"; do
-    if [ ! -f "$file" ]; then
-        msg_err "Error: Required file not found: $file"
+    stage_dir=$(system_variant_dir "$sku")
+    for file in \
+        "${stage_dir}/${SYSTEM_TAR_NAME}" \
+        "${stage_dir}/${SYSTEM_TAR_NAME}.sha256" \
+        "${stage_dir}/${FULL_IMG_NAME}" \
+        "${stage_dir}/${FULL_IMG_NAME}.sha256"
+    do
+        if [ ! -f "$file" ]; then
+            msg_err "Error: Required ${label} artifact not found: $file"
+            msg_err "Run 'make build' first."
+            exit 1
+        fi
+    done
+}
+
+sign_system_variant() {
+    local label="$1"
+    local sku="$2"
+    local stage_dir
+    local system_tar
+    local system_sig
+
+    stage_dir=$(system_variant_dir "$sku")
+    system_tar="${stage_dir}/${SYSTEM_TAR_NAME}"
+    system_sig="${system_tar}.sig"
+    rm -f "$system_sig"
+
+    msg_info "  Signing ${label} OTA payload (${sku})..."
+    for attempt in 1 2 3; do
+        if gpg --yes --detach-sign --output "$system_sig" --local-user "$SIGNING_KEY_FPR" "$system_tar"; then
+            break
+        fi
+        rm -f "$system_sig"
+        if [ "$attempt" -eq 3 ]; then
+            msg_err "Error: GPG signing failed after 3 attempts for ${label}"
+            exit 1
+        fi
+        msg_warn "GPG signing failed for ${label} (attempt ${attempt}/3). Please retry."
+    done
+
+    if [ ! -f "$system_sig" ]; then
+        msg_err "Error: Signature file not created: $system_sig"
         exit 1
     fi
-done
+}
 
-if [ ! -f "$ota_sha" ]; then
-    sha256sum "$ota_tar" | awk '{print $1}' > "$ota_sha"
-fi
-if [ ! -f "$img_sha" ]; then
-    sha256sum "$full_img" | awk '{print $1}' > "$img_sha"
-fi
+print_system_variant() {
+    local label="$1"
+    local sku="$2"
+    local stage_dir
+    local system_hash
+    local img_hash
 
-if rclone lsf "${R2_PATH}/${BUILD_VERSION}/" 2>/dev/null | grep -q .; then
-    msg_err "Error: Version ${BUILD_VERSION} already exists in R2"
-    exit 1
+    stage_dir=$(system_variant_dir "$sku")
+    system_hash=$(< "${stage_dir}/${SYSTEM_TAR_NAME}.sha256")
+    img_hash=$(< "${stage_dir}/${FULL_IMG_NAME}.sha256")
+
+    msg_info "    - ${label} (${sku})"
+    msg_info "      ${SYSTEM_TAR_NAME} → skus/${sku}/${SYSTEM_TAR_NAME}"
+    msg_info "      SHA256: ${system_hash}"
+    if [ -n "$SIGNING_KEY_FPR" ]; then
+        msg_info "      Signature: ${stage_dir}/${SYSTEM_TAR_NAME}.sig → skus/${sku}/${SYSTEM_TAR_NAME}.sig"
+    fi
+    msg_info "      ${FULL_IMG_NAME} → skus/${sku}/${FULL_IMG_NAME}"
+    msg_info "      SHA256: ${img_hash}"
+}
+
+upload_system_variant() {
+    local sku="$1"
+    local stage_dir
+    local dest
+
+    stage_dir=$(system_variant_dir "$sku")
+    dest="${R2_PATH}/${BUILD_VERSION}/skus/${sku}"
+
+    rclone copyto --progress "${stage_dir}/${SYSTEM_TAR_NAME}" "${dest}/${SYSTEM_TAR_NAME}"
+    rclone copyto --progress "${stage_dir}/${SYSTEM_TAR_NAME}.sha256" "${dest}/${SYSTEM_TAR_NAME}.sha256"
+    if [ -n "$SIGNING_KEY_FPR" ]; then
+        rclone copyto --progress "${stage_dir}/${SYSTEM_TAR_NAME}.sig" "${dest}/${SYSTEM_TAR_NAME}.sig"
+    fi
+    rclone copyto --progress "${stage_dir}/${FULL_IMG_NAME}" "${dest}/${FULL_IMG_NAME}"
+    rclone copyto --progress "${stage_dir}/${FULL_IMG_NAME}.sha256" "${dest}/${FULL_IMG_NAME}.sha256"
+}
+
+validate_system_variant "SDMMC" "$SDMMC_SKU"
+validate_system_variant "EMMC" "$EMMC_SKU"
+
+if [ "$DRY_RUN" != true ]; then
+    if rclone lsf "${R2_PATH}/${BUILD_VERSION}/" 2>/dev/null | grep -q .; then
+        msg_err "Error: Version ${BUILD_VERSION} already exists in R2"
+        exit 1
+    fi
 fi
 
 if [ -n "$SIGNING_KEY_FPR" ]; then
-    msg_info ">> Signing OTA payload with ${SIGNING_KEY_FPR}..."
+    msg_info ">> Signing OTA payloads with ${SIGNING_KEY_FPR}..."
     read -p "Ensure the YubiKey is inserted and ready, then continue signing? [y/N] " confirm_sign
     if [ "$confirm_sign" != "y" ]; then
         msg_warn "Signing cancelled."
         exit 1
     fi
-    rm -f "$ota_sig"
 
-    for attempt in 1 2 3; do
-        if gpg --yes --detach-sign --output "$ota_sig" --local-user "$SIGNING_KEY_FPR" "$ota_tar"; then
-            break
-        fi
-        rm -f "$ota_sig"
-        if [ "$attempt" -eq 3 ]; then
-            msg_err "Error: GPG signing failed after 3 attempts"
-            exit 1
-        fi
-        msg_warn "GPG signing failed (attempt ${attempt}/3). Please retry."
-    done
-
-    if [ ! -f "$ota_sig" ]; then
-        msg_err "Error: Signature file not created: $ota_sig"
-        exit 1
-    fi
+    sign_system_variant "SDMMC" "$SDMMC_SKU"
+    sign_system_variant "EMMC" "$EMMC_SKU"
 fi
-
-ota_hash=$(cat "$ota_sha")
-img_hash=$(cat "$img_sha")
 
 echo ""
 msg_info "═══════════════════════════════════════════════════════"
-msg_info "  R2 Upload"
+if [ "$DRY_RUN" = true ]; then
+    msg_info "  R2 Upload Dry Run"
+else
+    msg_info "  R2 Upload"
+fi
 msg_info "═══════════════════════════════════════════════════════"
-msg_info "  Destination: ${R2_PATH}/${BUILD_VERSION}/"
+msg_info "  Destination: ${R2_PATH}/${BUILD_VERSION}/skus/<sku>/"
 msg_info "═══════════════════════════════════════════════════════"
 msg_info "  Files to upload:"
-msg_info "    - update_ota.tar     → system.tar"
-msg_info "      SHA256: ${ota_hash}"
-if [ -n "$SIGNING_KEY_FPR" ]; then
-    msg_info "      Signature: ${ota_sig} → system.tar.sig"
-fi
-msg_info "    - update.img         → update.img"
-msg_info "      SHA256: ${img_hash}"
+print_system_variant "SDMMC" "$SDMMC_SKU"
+print_system_variant "EMMC" "$EMMC_SKU"
 msg_info "═══════════════════════════════════════════════════════"
 echo ""
+
+if [ "$DRY_RUN" = true ]; then
+    msg_ok "OK: R2 dry run complete; skipped upload"
+    exit 0
+fi
+
 read -p "The R2 upload is prepared. These are the files. Do you want to continue? [y/N] " confirm
 if [ "$confirm" != "y" ]; then
     msg_warn "R2 upload cancelled."
@@ -190,12 +259,7 @@ if [ "$confirm" != "y" ]; then
 fi
 
 msg_info ">> Uploading to R2..."
-rclone copyto --progress "$ota_tar" "${R2_PATH}/${BUILD_VERSION}/system.tar"
-rclone copyto --progress "$ota_sha" "${R2_PATH}/${BUILD_VERSION}/system.tar.sha256"
-if [ -n "$SIGNING_KEY_FPR" ]; then
-    rclone copyto --progress "$ota_sig" "${R2_PATH}/${BUILD_VERSION}/system.tar.sig"
-fi
-rclone copyto --progress "$full_img" "${R2_PATH}/${BUILD_VERSION}/update.img"
-rclone copyto --progress "$img_sha" "${R2_PATH}/${BUILD_VERSION}/update.img.sha256"
+upload_system_variant "$SDMMC_SKU"
+upload_system_variant "$EMMC_SKU"
 
-msg_ok "OK: Uploaded to R2: ${R2_PATH}/${BUILD_VERSION}/"
+msg_ok "OK: Uploaded to R2: ${R2_PATH}/${BUILD_VERSION}/skus/"

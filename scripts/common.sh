@@ -138,5 +138,23 @@ wait_for_device() {
 OUTPUT_IMAGE_DIR="${ROOT_DIR:-$(pwd)}/output/image"
 OTA_TAR_NAME="update_ota.tar"
 FULL_IMG_NAME="update.img"
+SD_IMG_ZIP_NAME="update_sd.img.zip"
 OTA_TAR="${OUTPUT_IMAGE_DIR}/${OTA_TAR_NAME}"
 FULL_IMG="${OUTPUT_IMAGE_DIR}/${FULL_IMG_NAME}"
+SD_IMG_ZIP="${OUTPUT_IMAGE_DIR}/${SD_IMG_ZIP_NAME}"
+
+# -----------------------------------------------------------------------------
+# System release variants
+# -----------------------------------------------------------------------------
+SYSTEM_RELEASE_DIR="${ROOT_DIR:-$(pwd)}/release-artifacts/system"
+SYSTEM_TAR_NAME="system.tar"
+
+EMMC_SKU="jetkvm-v2"
+EMMC_BOARD_CONFIG="BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk"
+SDMMC_SKU="jetkvm-v2-sdmmc"
+SDMMC_BOARD_CONFIG="BoardConfig_IPC/BoardConfig-SDMMC-NONE-RV1106_JETKVM_V2.mk"
+
+system_variant_dir() {
+    local sku="$1"
+    echo "${SYSTEM_RELEASE_DIR}/${sku}"
+}
