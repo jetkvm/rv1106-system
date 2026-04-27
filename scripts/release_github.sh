@@ -63,13 +63,14 @@ cd "$ROOT_DIR"
 buildkit="buildkit.tar.zst"
 emmc_dir=$(system_variant_dir "$EMMC_SKU")
 sdmmc_dir=$(system_variant_dir "$SDMMC_SKU")
+github_dir="${ROOT_DIR}/release-artifacts/github"
 github_assets=(
-    "${emmc_dir}/${SYSTEM_TAR_NAME}#${OTA_TAR_NAME}"
-    "${emmc_dir}/${FULL_IMG_NAME}#${FULL_IMG_NAME}"
-    "${sdmmc_dir}/${SYSTEM_TAR_NAME}#update_ota-sdmmc.tar"
-    "${sdmmc_dir}/${FULL_IMG_NAME}#update-sdmmc.img"
-    "${sdmmc_dir}/${SD_IMG_ZIP_NAME}#${SD_IMG_ZIP_NAME}"
-    "${buildkit}#kvm-native-buildkit.tar.zst"
+    "${github_dir}/${OTA_TAR_NAME}"
+    "${github_dir}/${FULL_IMG_NAME}"
+    "${github_dir}/update_ota-sdmmc.tar"
+    "${github_dir}/update-sdmmc.img"
+    "${github_dir}/${SD_IMG_ZIP_NAME}"
+    "${github_dir}/kvm-native-buildkit.tar.zst"
 )
 
 if [ ! -f "$buildkit" ]; then
@@ -77,10 +78,31 @@ if [ ! -f "$buildkit" ]; then
     ./make_buildkit.sh
 fi
 
+stage_github_asset() {
+    local source_path="$1"
+    local asset_name="$2"
+    local dest_path="${github_dir}/${asset_name}"
+
+    if [ ! -f "$source_path" ]; then
+        msg_err "Error: Required file not found: $source_path"
+        msg_err "Run 'make build' first."
+        exit 1
+    fi
+
+    mkdir -p "$github_dir"
+    cp --reflink=auto "$source_path" "$dest_path"
+}
+
+stage_github_asset "${emmc_dir}/${SYSTEM_TAR_NAME}" "$OTA_TAR_NAME"
+stage_github_asset "${emmc_dir}/${FULL_IMG_NAME}" "$FULL_IMG_NAME"
+stage_github_asset "${sdmmc_dir}/${SYSTEM_TAR_NAME}" "update_ota-sdmmc.tar"
+stage_github_asset "${sdmmc_dir}/${FULL_IMG_NAME}" "update-sdmmc.img"
+stage_github_asset "${sdmmc_dir}/${SD_IMG_ZIP_NAME}" "$SD_IMG_ZIP_NAME"
+stage_github_asset "$buildkit" "kvm-native-buildkit.tar.zst"
+
 for asset in "${github_assets[@]}"; do
-    asset_path="${asset%%#*}"
-    if [ ! -f "$asset_path" ]; then
-        msg_err "Error: Required file not found: $asset_path"
+    if [ ! -f "$asset" ]; then
+        msg_err "Error: Required file not found: $asset"
         msg_err "Run 'make build' first."
         exit 1
     fi
@@ -113,9 +135,8 @@ msg_info "  Commit:  $(git rev-parse --short HEAD)"
 msg_info "═══════════════════════════════════════════════════════"
 msg_info "  Files to upload:"
 for asset in "${github_assets[@]}"; do
-    asset_path="${asset%%#*}"
-    asset_name="${asset##*#}"
-    asset_size=$(du -h "$asset_path" | cut -f1)
+    asset_name=$(basename "$asset")
+    asset_size=$(du -h "$asset" | cut -f1)
     msg_info "    - ${asset_name} (${asset_size})"
 done
 msg_info "═══════════════════════════════════════════════════════"

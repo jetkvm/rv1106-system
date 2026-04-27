@@ -30,12 +30,16 @@ run_quiet() {
 
     msg_info "  ${label}..."
     msg_info "    log: ${log_file#${ROOT_DIR}/}"
-    if "$@" > "$log_file" 2>&1; then
+    set +e
+    "$@" > "$log_file" 2>&1
+    local status=$?
+    set -e
+
+    if [ "$status" -eq 0 ]; then
         msg_ok "  OK: ${label}"
         return
     fi
 
-    local status=$?
     msg_err "Error: ${label} failed (exit ${status}); log: ${log_file}"
     awk 'BEGIN { IGNORECASE = 1 } /error|failed|permission denied|not found|no such file/ { print }' "$log_file" | tail -n 80 >&2 || true
     msg_err "Last 40 log lines:"
