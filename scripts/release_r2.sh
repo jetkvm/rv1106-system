@@ -124,13 +124,15 @@ validate_system_variant() {
     local label="$1"
     local sku="$2"
     local stage_dir
+    local recovery_name
 
     stage_dir=$(system_variant_dir "$sku")
+    recovery_name=$(recovery_artifact_for_sku "$sku")
     for file in \
         "${stage_dir}/${SYSTEM_TAR_NAME}" \
         "${stage_dir}/${SYSTEM_TAR_NAME}.sha256" \
-        "${stage_dir}/${FULL_IMG_NAME}" \
-        "${stage_dir}/${FULL_IMG_NAME}.sha256"
+        "${stage_dir}/${recovery_name}" \
+        "${stage_dir}/${recovery_name}.sha256"
     do
         if [ ! -f "$file" ]; then
             msg_err "Error: Required ${label} artifact not found: $file"
@@ -175,12 +177,14 @@ print_system_variant() {
     local label="$1"
     local sku="$2"
     local stage_dir
+    local recovery_name
     local system_hash
-    local img_hash
+    local recovery_hash
 
     stage_dir=$(system_variant_dir "$sku")
+    recovery_name=$(recovery_artifact_for_sku "$sku")
     system_hash=$(< "${stage_dir}/${SYSTEM_TAR_NAME}.sha256")
-    img_hash=$(< "${stage_dir}/${FULL_IMG_NAME}.sha256")
+    recovery_hash=$(< "${stage_dir}/${recovery_name}.sha256")
 
     msg_info "    - ${label} (${sku})"
     msg_info "      ${SYSTEM_TAR_NAME} → skus/${sku}/${SYSTEM_TAR_NAME}"
@@ -188,16 +192,18 @@ print_system_variant() {
     if [ -n "$SIGNING_KEY_FPR" ]; then
         msg_info "      Signature: ${stage_dir}/${SYSTEM_TAR_NAME}.sig → skus/${sku}/${SYSTEM_TAR_NAME}.sig"
     fi
-    msg_info "      ${FULL_IMG_NAME} → skus/${sku}/${FULL_IMG_NAME}"
-    msg_info "      SHA256: ${img_hash}"
+    msg_info "      ${recovery_name} → skus/${sku}/${recovery_name}"
+    msg_info "      SHA256: ${recovery_hash}"
 }
 
 upload_system_variant() {
     local sku="$1"
     local stage_dir
+    local recovery_name
     local dest
 
     stage_dir=$(system_variant_dir "$sku")
+    recovery_name=$(recovery_artifact_for_sku "$sku")
     dest="${R2_PATH}/${BUILD_VERSION}/skus/${sku}"
 
     rclone copyto --progress "${stage_dir}/${SYSTEM_TAR_NAME}" "${dest}/${SYSTEM_TAR_NAME}"
@@ -205,8 +211,8 @@ upload_system_variant() {
     if [ -n "$SIGNING_KEY_FPR" ]; then
         rclone copyto --progress "${stage_dir}/${SYSTEM_TAR_NAME}.sig" "${dest}/${SYSTEM_TAR_NAME}.sig"
     fi
-    rclone copyto --progress "${stage_dir}/${FULL_IMG_NAME}" "${dest}/${FULL_IMG_NAME}"
-    rclone copyto --progress "${stage_dir}/${FULL_IMG_NAME}.sha256" "${dest}/${FULL_IMG_NAME}.sha256"
+    rclone copyto --progress "${stage_dir}/${recovery_name}" "${dest}/${recovery_name}"
+    rclone copyto --progress "${stage_dir}/${recovery_name}.sha256" "${dest}/${recovery_name}.sha256"
 }
 
 validate_system_variant "SDMMC" "$SDMMC_SKU"

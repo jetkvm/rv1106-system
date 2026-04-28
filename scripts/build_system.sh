@@ -50,8 +50,9 @@ run_quiet() {
 stage_system_variant() {
     local label="$1"
     local sku="$2"
-    local require_sd_zip="${3:-false}"
     local stage_dir
+    local recovery_name
+    local recovery_src
 
     stage_dir=$(system_variant_dir "$sku")
     mkdir -p "$stage_dir"
@@ -60,25 +61,24 @@ stage_system_variant() {
         msg_err "Error: $OTA_TAR not found after ${label} build"
         exit 1
     fi
-    if [ ! -f "$FULL_IMG" ]; then
-        msg_err "Error: $FULL_IMG not found after ${label} build"
+
+    # SDMMC's update.img is a packed Rockchip update image, not a raw disk
+    # image, so it can't be written to a microSD card. We ship the dd-able
+    # update_sd.img.zip as the recovery artifact instead; update.img is
+    # still built for SDMMC but deliberately not staged.
+    recovery_name=$(recovery_artifact_for_sku "$sku")
+    recovery_src=$(recovery_source_for_sku "$sku")
+
+    if [ ! -f "$recovery_src" ]; then
+        msg_err "Error: $recovery_src not found after ${label} build"
         exit 1
     fi
 
     msg_info "  Staging ${label} system artifacts (${sku})..."
     cp --reflink=auto "$OTA_TAR" "${stage_dir}/${SYSTEM_TAR_NAME}"
-    cp --reflink=auto "$FULL_IMG" "${stage_dir}/${FULL_IMG_NAME}"
+    cp --reflink=auto "$recovery_src" "${stage_dir}/${recovery_name}"
     sha256sum "${stage_dir}/${SYSTEM_TAR_NAME}" | awk '{print $1}' > "${stage_dir}/${SYSTEM_TAR_NAME}.sha256"
-    sha256sum "${stage_dir}/${FULL_IMG_NAME}" | awk '{print $1}' > "${stage_dir}/${FULL_IMG_NAME}.sha256"
-
-    if [ "$require_sd_zip" = true ]; then
-        if [ ! -f "$SD_IMG_ZIP" ]; then
-            msg_err "Error: $SD_IMG_ZIP not found after ${label} build"
-            exit 1
-        fi
-        cp --reflink=auto "$SD_IMG_ZIP" "${stage_dir}/${SD_IMG_ZIP_NAME}"
-        sha256sum "${stage_dir}/${SD_IMG_ZIP_NAME}" | awk '{print $1}' > "${stage_dir}/${SD_IMG_ZIP_NAME}.sha256"
-    fi
+    sha256sum "${stage_dir}/${recovery_name}" | awk '{print $1}' > "${stage_dir}/${recovery_name}.sha256"
 }
 
 prompt_test_system_variant() {
@@ -125,13 +125,12 @@ build_system_variant() {
     local label="$1"
     local sku="$2"
     local board_config="$3"
-    local require_sd_zip="${4:-false}"
 
     run_quiet "Selecting ${label} board (${sku})" ./build.sh lunch "$board_config"
     run_quiet "Updating JetKVM app binary for ${label} (${sku})" ./update_app.sh "$sku"
     run_quiet "Building ${label} system image" ./build.sh
 
-    stage_system_variant "$label" "$sku" "$require_sd_zip"
+    stage_system_variant "$label" "$sku"
     prompt_test_system_variant "$label" "$sku"
 }
 
@@ -144,7 +143,7 @@ run_quiet "Cleaning SDK output" ./build.sh clean
 
 rm -rf "$SYSTEM_RELEASE_DIR"
 
-build_system_variant "SDMMC" "$SDMMC_SKU" "$SDMMC_BOARD_CONFIG" true
+build_system_variant "SDMMC" "$SDMMC_SKU" "$SDMMC_BOARD_CONFIG"
 
 msg_info "  Cleaning build output before EMMC..."
 sudo rm -rf output/

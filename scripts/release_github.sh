@@ -68,7 +68,6 @@ github_assets=(
     "${github_dir}/${OTA_TAR_NAME}"
     "${github_dir}/${FULL_IMG_NAME}"
     "${github_dir}/update_ota-sdmmc.tar"
-    "${github_dir}/update-sdmmc.img"
     "${github_dir}/${SD_IMG_ZIP_NAME}"
     "${github_dir}/kvm-native-buildkit.tar.zst"
 )
@@ -96,7 +95,6 @@ stage_github_asset() {
 stage_github_asset "${emmc_dir}/${SYSTEM_TAR_NAME}" "$OTA_TAR_NAME"
 stage_github_asset "${emmc_dir}/${FULL_IMG_NAME}" "$FULL_IMG_NAME"
 stage_github_asset "${sdmmc_dir}/${SYSTEM_TAR_NAME}" "update_ota-sdmmc.tar"
-stage_github_asset "${sdmmc_dir}/${FULL_IMG_NAME}" "update-sdmmc.img"
 stage_github_asset "${sdmmc_dir}/${SD_IMG_ZIP_NAME}" "$SD_IMG_ZIP_NAME"
 stage_github_asset "$buildkit" "kvm-native-buildkit.tar.zst"
 

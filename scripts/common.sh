@@ -158,3 +158,24 @@ system_variant_dir() {
     local sku="$1"
     echo "${SYSTEM_RELEASE_DIR}/${sku}"
 }
+
+# Recovery artifact filename per SKU (eMMC -> update.img, SDMMC ->
+# update_sd.img.zip). Keep in sync with RECOVERY_ARTIFACT_BY_SKU in
+# cloud-api/src/releases.ts.
+recovery_artifact_for_sku() {
+    local sku="$1"
+    case "$sku" in
+        "$SDMMC_SKU") echo "$SD_IMG_ZIP_NAME" ;;
+        "$EMMC_SKU")  echo "$FULL_IMG_NAME" ;;
+        *)
+            msg_err "Error: no recovery artifact mapped for SKU '${sku}'"
+            exit 1
+            ;;
+    esac
+}
+
+# Absolute path of the recovery artifact in the build output dir.
+recovery_source_for_sku() {
+    local sku="$1"
+    echo "${OUTPUT_IMAGE_DIR}/$(recovery_artifact_for_sku "$sku")"
+}
