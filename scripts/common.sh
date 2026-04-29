@@ -177,5 +177,10 @@ recovery_artifact_for_sku() {
 # Absolute path of the recovery artifact in the build output dir.
 recovery_source_for_sku() {
     local sku="$1"
-    echo "${OUTPUT_IMAGE_DIR}/$(recovery_artifact_for_sku "$sku")"
+    local artifact
+    # Capture separately so an unknown-SKU exit in recovery_artifact_for_sku
+    # (which would otherwise only kill the command-substitution subshell)
+    # actually fails this function.
+    artifact=$(recovery_artifact_for_sku "$sku") || return $?
+    echo "${OUTPUT_IMAGE_DIR}/${artifact}"
 }
