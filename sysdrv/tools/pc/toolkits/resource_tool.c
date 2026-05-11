@@ -240,8 +240,6 @@ void sha1_update(sha1_context *ctx, const unsigned char *input,
 		ctx->total[1]++;
 
 	if (left && ilen >= fill) {
-		if (left + (unsigned long) fill > 64)
-			return;
 		memcpy ((void *) (ctx->buffer + left), (void *) input, fill);
 		sha1_process (ctx, ctx->buffer);
 		input += fill;
@@ -256,8 +254,6 @@ void sha1_update(sha1_context *ctx, const unsigned char *input,
 	}
 
 	if (ilen > 0) {
-		if (left + (unsigned long) ilen > 64)
-			return;
 		memcpy ((void *) (ctx->buffer + left), (void *) input, ilen);
 	}
 }
