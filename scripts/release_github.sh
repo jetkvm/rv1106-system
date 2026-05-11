@@ -25,6 +25,7 @@ show_help() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         --version)
+            require_arg "$1" "${2:-}"
             BUILD_VERSION="$2"
             shift 2
             ;;

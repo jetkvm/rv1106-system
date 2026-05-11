@@ -7,6 +7,44 @@ ROOT_DIR=$(realpath "${SCRIPT_DIR}/..")
 
 source "${SCRIPT_DIR}/common.sh"
 
+SELECTED_SKU="${FLASH_SKU:-${SYSTEM_SKU:-}}"
+
+show_help() {
+    echo "Usage: $0 [--sku <emmc|sdmmc|sku>]"
+    echo
+    echo "Options:"
+    echo "  --sku, --target, --variant <target>"
+    echo "      Build only one system target. Accepted values: emmc, sdmmc,"
+    echo "      ${EMMC_SKU}, ${SDMMC_SKU}."
+    echo "  --help"
+    echo "      Show this help message."
+    echo
+    echo "With no target, both SDMMC and EMMC release artifacts are built."
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --sku|--target|--variant)
+            require_arg "$1" "${2:-}"
+            SELECTED_SKU="$2"
+            shift 2
+            ;;
+        --help)
+            show_help
+            exit 0
+            ;;
+        *)
+            msg_err "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+if [ -n "$SELECTED_SKU" ]; then
+    SELECTED_SKU=$(normalize_system_sku "$SELECTED_SKU") || exit 1
+fi
+
 if [ -z "${BUILD_VERSION:-}" ]; then
     base_version=$(cat "${ROOT_DIR}/VERSION" 2>/dev/null || echo "0.0.0")
     export BUILD_VERSION="${base_version}-dev$(date -u +%Y%m%d%H%M)"
@@ -85,9 +123,6 @@ prompt_test_system_variant() {
     local label="$1"
     local sku="$2"
     local confirm
-    local device_ip="${DEVICE_IP:-192.168.1.77}"
-    local device_user="${DEVICE_USER:-root}"
-    local test_args=("-r" "$device_ip" "-u" "$device_user")
 
     if [ "${PROMPT_VARIANT_TESTS:-1}" != "1" ]; then
         return 0
@@ -100,13 +135,22 @@ prompt_test_system_variant() {
         return 0
     fi
 
+    local device_ip="${DEVICE_IP:-}"
+    local device_user="${DEVICE_USER:-root}"
+
+    if [ -z "$device_ip" ]; then
+        msg_err "Error: DEVICE_IP is required to flash and test ${label}"
+        msg_err "Re-run with DEVICE_IP=<ip> if needed"
+        exit 1
+    fi
+
     if [ -z "${JETKVM_REMOTE_HOST:-}" ]; then
         msg_err "Error: JETKVM_REMOTE_HOST is required to run E2E tests"
         msg_err "Re-run with JETKVM_REMOTE_HOST=<user@host> and DEVICE_IP=${device_ip} if needed"
         exit 1
     fi
 
-    test_args+=("--remote-host" "$JETKVM_REMOTE_HOST")
+    local test_args=("-r" "$device_ip" "-u" "$device_user" "--remote-host" "$JETKVM_REMOTE_HOST")
     if [ -n "${KVM_DIR:-}" ]; then
         test_args+=("--kvm-dir" "$KVM_DIR")
     fi
@@ -115,7 +159,7 @@ prompt_test_system_variant() {
     fi
 
     msg_info "  Flashing ${label} build to ${device_user}@${device_ip}..."
-    ./scripts/flash_system.sh -r "$device_ip" -u "$device_user"
+    ./scripts/flash_system.sh -r "$device_ip" -u "$device_user" --sku "$sku"
 
     msg_info "  Running ${label} E2E tests..."
     ./scripts/run_e2e_tests.sh "${test_args[@]}"
@@ -137,17 +181,33 @@ build_system_variant() {
 msg_info ">> Building rv1106-system..."
 cd "$ROOT_DIR"
 
-msg_info "  Cleaning previous build output..."
-sudo rm -rf output/
-run_quiet "Cleaning SDK output" ./build.sh clean
+clean_sdk_output() {
+    local message="$1"
+    local label="${2:-$message}"
 
+    msg_info "  ${message}..."
+    sudo rm -rf output/
+    run_quiet "$label" ./build.sh clean
+}
+
+if [ -n "$SELECTED_SKU" ]; then
+    SELECTED_LABEL=$(system_variant_label "$SELECTED_SKU") || exit 1
+    SELECTED_BOARD_CONFIG=$(system_variant_board_config "$SELECTED_SKU") || exit 1
+
+    clean_sdk_output "Cleaning SDK output"
+    rm -rf "$(system_variant_dir "$SELECTED_SKU")"
+    build_system_variant "$SELECTED_LABEL" "$SELECTED_SKU" "$SELECTED_BOARD_CONFIG"
+
+    msg_ok "OK: Build completed"
+    exit 0
+fi
+
+clean_sdk_output "Cleaning previous build output" "Cleaning SDK output"
 rm -rf "$SYSTEM_RELEASE_DIR"
 
 build_system_variant "SDMMC" "$SDMMC_SKU" "$SDMMC_BOARD_CONFIG"
 
-msg_info "  Cleaning build output before EMMC..."
-sudo rm -rf output/
-run_quiet "Cleaning SDK output before EMMC" ./build.sh clean
+clean_sdk_output "Cleaning build output before EMMC" "Cleaning SDK output before EMMC"
 
 build_system_variant "EMMC" "$EMMC_SKU" "$EMMC_BOARD_CONFIG"
 

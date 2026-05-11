@@ -2,7 +2,7 @@
 #
 # Targets:
 #   build        - Build rv1106-system image
-#   flash        - Flash system image to device (depends on build)
+#   flash        - Prompt for target, build one system image, and flash it
 #   test         - Run E2E tests (depends on flash)
 #   dev_release  - Dev release (prerelease) with optional per-SKU testing
 #   release      - Production release with optional per-SKU testing
@@ -12,7 +12,7 @@
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
 VERSION_DEV := $(VERSION)-dev$(shell date -u +%Y%m%d%H%M)
 
-DEVICE_IP ?= 192.168.1.77
+DEVICE_IP ?=
 R2_PATH := r2://jetkvm-update/system
 SIGNING_KEY_FPR ?=
 OTA_ROOT_KEY_FPR := AF5A36A993D828FEFE7C18C2D1B9856C26A79E95
@@ -81,10 +81,7 @@ build:
 	./scripts/build_system.sh
 
 check_device:
-	@echo "Checking device connectivity ($(DEVICE_IP))..."
-	@ping -c 1 -W 5 $(DEVICE_IP) > /dev/null 2>&1 || { echo "Error: Cannot reach device at $(DEVICE_IP)"; exit 1; }
-	@ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@$(DEVICE_IP) "echo ok" > /dev/null 2>&1 || { echo "Error: SSH failed to root@$(DEVICE_IP)"; exit 1; }
-	@echo "OK: Device reachable"
+	@DEVICE_IP="$(DEVICE_IP)" ./scripts/check_device.sh
 
 check_remote:
 	@echo "Checking remote host connectivity ($(JETKVM_REMOTE_HOST))..."
@@ -93,11 +90,11 @@ check_remote:
 	@echo "OK: Remote host reachable"
 
 flash:
-	$(MAKE) check_device
 ifndef SKIP_BUILD
-	PROMPT_VARIANT_TESTS=0 $(MAKE) build
+	PROMPT_VARIANT_TESTS=0 ./scripts/flash_system.sh $(if $(DEVICE_IP),-r $(DEVICE_IP)) --build $(if $(FLASH_SKU),--sku $(FLASH_SKU))
+else
+	./scripts/flash_system.sh $(if $(DEVICE_IP),-r $(DEVICE_IP)) $(if $(FLASH_SKU),--sku $(FLASH_SKU))
 endif
-	./scripts/flash_system.sh -r $(DEVICE_IP)
 
 test:
 	$(MAKE) check_device
@@ -107,7 +104,7 @@ ifndef SKIP_BUILD
 else
 	$(MAKE) flash SKIP_BUILD=1
 endif
-	./scripts/run_e2e_tests.sh -r $(DEVICE_IP) --remote-host $(JETKVM_REMOTE_HOST) $(if $(KVM_DIR),--kvm-dir $(KVM_DIR))
+	./scripts/run_e2e_tests.sh $(if $(DEVICE_IP),-r $(DEVICE_IP)) --remote-host $(JETKVM_REMOTE_HOST) $(if $(KVM_DIR),--kvm-dir $(KVM_DIR))
 
 # -----------------------------------------------------------------------------
 # Dev Release - Prerelease for testing

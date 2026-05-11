@@ -32,6 +32,19 @@ msg_err() { msg "$1" "$C_ERR"; }
 msg_warn() { msg "$1" "$C_WARN"; }
 
 # -----------------------------------------------------------------------------
+# CLI argument helpers
+# -----------------------------------------------------------------------------
+require_arg() {
+    local option="$1"
+    local value="${2:-}"
+
+    if [ -z "$value" ]; then
+        msg_err "Error: ${option} requires a value"
+        exit 1
+    fi
+}
+
+# -----------------------------------------------------------------------------
 # SSH helper
 # -----------------------------------------------------------------------------
 sshdev() {
@@ -48,6 +61,10 @@ sshdev() {
 # -----------------------------------------------------------------------------
 check_ping() {
     local host=$1
+    if [ -z "$host" ]; then
+        msg_err "Error: device IP is required"
+        exit 1
+    fi
     msg_info ">> Checking if device is reachable at ${host}..."
     if ! ping -c 3 -W 5 "${host}" > /dev/null 2>&1; then
         msg_err "Error: Cannot reach device at ${host}"
@@ -60,6 +77,10 @@ check_ping() {
 check_ssh() {
     local user=$1
     local host=$2
+    if [ -z "$host" ]; then
+        msg_err "Error: device IP is required"
+        exit 1
+    fi
     msg_info ">> Checking SSH connectivity to ${user}@${host}..."
     if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${user}@${host}" "echo 'SSH connection successful'" > /dev/null 2>&1; then
         msg_err "Error: Cannot establish SSH connection to ${user}@${host}"
@@ -153,6 +174,72 @@ EMMC_SKU="jetkvm-v2"
 EMMC_BOARD_CONFIG="BoardConfig_IPC/BoardConfig-EMMC-NONE-RV1106_JETKVM_V2.mk"
 SDMMC_SKU="jetkvm-v2-sdmmc"
 SDMMC_BOARD_CONFIG="BoardConfig_IPC/BoardConfig-SDMMC-NONE-RV1106_JETKVM_V2.mk"
+
+normalize_system_sku() {
+    local target="$1"
+    case "$target" in
+        emmc|EMMC|jetkvm-v2)
+            echo "$EMMC_SKU"
+            ;;
+        sd|SD|sdmmc|SDMMC|jetkvm-v2-sdmmc)
+            echo "$SDMMC_SKU"
+            ;;
+        *)
+            msg_err "Error: unknown system target '${target}'" >&2
+            msg_err "Use one of: emmc, sdmmc, ${EMMC_SKU}, ${SDMMC_SKU}" >&2
+            return 1
+            ;;
+    esac
+}
+
+system_variant_label() {
+    local sku="$1"
+    case "$sku" in
+        "$EMMC_SKU") echo "EMMC" ;;
+        "$SDMMC_SKU") echo "SDMMC" ;;
+        *)
+            msg_err "Error: no label mapped for SKU '${sku}'" >&2
+            return 1
+            ;;
+    esac
+}
+
+system_variant_board_config() {
+    local sku="$1"
+    case "$sku" in
+        "$EMMC_SKU") echo "$EMMC_BOARD_CONFIG" ;;
+        "$SDMMC_SKU") echo "$SDMMC_BOARD_CONFIG" ;;
+        *)
+            msg_err "Error: no board config mapped for SKU '${sku}'" >&2
+            return 1
+            ;;
+    esac
+}
+
+prompt_system_sku() {
+    local choice
+
+    if [ ! -t 0 ]; then
+        msg_err "Error: system target is required in non-interactive mode" >&2
+        msg_err "Set FLASH_SKU or SYSTEM_SKU to emmc or sdmmc." >&2
+        return 1
+    fi
+
+    {
+        echo ""
+        echo "Select system target:"
+        echo "  1) EMMC  (${EMMC_SKU})"
+        echo "  2) SDMMC (${SDMMC_SKU})"
+        printf "Target [1/2]: "
+    } >&2
+    read -r choice
+
+    case "$choice" in
+        1) echo "$EMMC_SKU" ;;
+        2) echo "$SDMMC_SKU" ;;
+        *) normalize_system_sku "$choice" ;;
+    esac
+}
 
 system_variant_dir() {
     local sku="$1"

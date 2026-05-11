@@ -4,7 +4,7 @@ set -o pipefail
 
 SCRIPT_DIR=$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")
 
-DEVICE_IP="${DEVICE_IP:-192.168.1.77}"
+DEVICE_IP="${DEVICE_IP:-}"
 DEVICE_USER="${DEVICE_USER:-root}"
 KVM_REPO="${KVM_REPO:-https://github.com/jetkvm/kvm.git}"
 KVM_BRANCH="${KVM_BRANCH:-dev}"
@@ -19,7 +19,7 @@ show_help() {
     echo "Usage: $0 [options]"
     echo
     echo "Options:"
-    echo "  -r, --remote <ip>     Device IP address (default: ${DEVICE_IP})"
+    echo "  -r, --remote <ip>     Device IP address"
     echo "  -u, --user <user>     Remote username (default: ${DEVICE_USER})"
     echo "      --kvm-dir <path>  Path to existing kvm repo (skips clone)"
     echo "      --kvm-branch <b>  KVM branch to clone (default: ${KVM_BRANCH})"
@@ -39,14 +39,17 @@ trap cleanup EXIT
 while [[ $# -gt 0 ]]; do
     case $1 in
         -r|--remote)
+            require_arg "$1" "${2:-}"
             DEVICE_IP="$2"
             shift 2
             ;;
         -u|--user)
+            require_arg "$1" "${2:-}"
             DEVICE_USER="$2"
             shift 2
             ;;
         --kvm-dir)
+            require_arg "$1" "${2:-}"
             KVM_DIR="$2"
             if [ ! -d "$KVM_DIR" ]; then
                 msg_err "Error: KVM directory does not exist: $KVM_DIR"
@@ -55,10 +58,12 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --kvm-branch)
+            require_arg "$1" "${2:-}"
             KVM_BRANCH="$2"
             shift 2
             ;;
         --remote-host)
+            require_arg "$1" "${2:-}"
             JETKVM_REMOTE_HOST="$2"
             shift 2
             ;;
@@ -76,6 +81,12 @@ done
 
 if [ -z "$JETKVM_REMOTE_HOST" ]; then
     msg_err "Error: JETKVM_REMOTE_HOST is required (set via --remote-host or env var)"
+    show_help
+    exit 1
+fi
+
+if [ -z "$DEVICE_IP" ]; then
+    msg_err "Error: device IP is required (set via -r/--remote or DEVICE_IP)"
     show_help
     exit 1
 fi

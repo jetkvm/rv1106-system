@@ -53,16 +53,6 @@ validate_signing_key() {
     fi
 }
 
-require_arg() {
-    local option="$1"
-    local value="${2:-}"
-
-    if [ -z "$value" ]; then
-        msg_err "Error: ${option} requires a value"
-        exit 1
-    fi
-}
-
 while [[ $# -gt 0 ]]; do
     case $1 in
         --version)
