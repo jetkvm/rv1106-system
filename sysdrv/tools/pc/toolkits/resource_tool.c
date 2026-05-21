@@ -822,7 +822,7 @@ static bool load_content(resource_content *content)
 	if (content->load_addr)
 		return true;
 	int blocks = fix_blocks(content->content_size);
-	content->load_addr = malloc(blocks * BLOCK_SIZE);
+	content->load_addr = calloc(blocks, BLOCK_SIZE);
 	if (!content->load_addr)
 		return false;
 	if (!StorageReadLba(get_ptn_offset() + content->content_offset,
@@ -940,7 +940,7 @@ static int load_file(const char *file_path, int offset_block, int blocks)
 			goto end;
 		}
 	} else {
-		void *data = malloc(blocks * BLOCK_SIZE);
+		void *data = calloc(blocks, BLOCK_SIZE);
 		if (!data)
 			goto end;
 		if (!load_content_data(&content, offset_block, data, blocks)) {
@@ -1077,7 +1077,7 @@ static int test_charge(int argc, char **argv)
 				goto end;
 			}
 			level_confs =
-			        (anim_level_conf *)malloc(level_conf_num * sizeof(anim_level_conf));
+			        (anim_level_conf *)calloc(level_conf_num, sizeof(anim_level_conf));
 			LOGD("Found levels:%d", level_conf_num);
 		} else {
 			LOGE("Unknown arg:%s", arg);
@@ -1244,7 +1244,7 @@ static bool mkdirs(char *path)
 	char buf[MAX_INDEX_ENTRY_PATH_LEN];
 	bool ret = true;
 	while ((pos = memchr(tmp, '/', strlen(tmp)))) {
-		strcpy(buf, path);
+		snprintf(buf, MAX_INDEX_ENTRY_PATH_LEN, "%s", path);
 		buf[pos - path] = '\0';
 		tmp = pos + 1;
 		LOGD("mkdir:%s", buf);
