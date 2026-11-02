@@ -4756,16 +4756,16 @@ int dwc3_gadget_init(struct dwc3 *dwc)
 	if (ret)
 		goto err4;
 
+	if (DWC3_IP_IS(DWC32) && dwc->maximum_speed == USB_SPEED_SUPER_PLUS)
+		dwc3_gadget_set_ssp_rate(dwc->gadget, dwc->max_ssp_rate);
+	else
+		dwc3_gadget_set_speed(dwc->gadget, dwc->maximum_speed);
+
 	ret = usb_add_gadget(dwc->gadget);
 	if (ret) {
 		dev_err(dwc->dev, "failed to add gadget\n");
 		goto err5;
 	}
-
-	if (DWC3_IP_IS(DWC32) && dwc->maximum_speed == USB_SPEED_SUPER_PLUS)
-		dwc3_gadget_set_ssp_rate(dwc->gadget, dwc->max_ssp_rate);
-	else
-		dwc3_gadget_set_speed(dwc->gadget, dwc->maximum_speed);
 
 	return 0;
 
